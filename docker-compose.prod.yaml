@@ -4,22 +4,28 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     restart: unless-stopped
+    container_name: ${SERVICE}
+    networks:
+      - traefik_default
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.penguin.entrypoints=web, websecure"
-      - "traefik.http.routers.penguin.rule=Host(`${PENGUIN_SERVICE:-penguin}.${DOMAIN}`)"
-      - "traefik.http.routers.penguin.tls=true"
-      - "traefik.http.routers.penguin.tls.certresolver=cloudflare"
-      - "traefik.http.services.penguin.loadbalancer.server.port=8080"
+      - "traefik.http.routers.${SERVICE}.entrypoints=web, websecure"
+      - "traefik.http.routers.${SERVICE}.rule=Host(`${SERVICE}.${DOMAIN}`)"
+      - "traefik.http.routers.${SERVICE}.tls=true"
+      - "traefik.http.routers.${SERVICE}.tls.certresolver=cloudflare"
+      - "traefik.http.routers.${SERVICE}.service=${SERVICE}"
+      - "traefik.http.services.${SERVICE}.loadbalancer.server.port=8000"
       - "traefik.docker.network=traefik_default"
-      - "traefik.http.routers.penguin.middlewares=secured@file"
+      - "traefik.http.routers.${SERVICE}.middlewares=secured@file"
+      - homepage.group=${GROUP}
+      - homepage.name=${SERVICE_NAME}
+      - homepage.icon=password.png
+      - homepage.href=https://${SERVICE}.${DOMAIN}/
+      - homepage.description=${DESCRIPTION}
 
-      # Homepage Dashboard Labels
-      - "homepage.group=${PENGUIN_GROUP:-Services}"
-      - "homepage.name=${PENGUIN_SERVICE_NAME:-Penguin Pass}"
-      - "homepage.icon=password.png"
-      - "homepage.href=https://${PENGUIN_SERVICE:-penguin}.${DOMAIN}/"
-      - "homepage.description=${PENGUIN_DESCRIPTION:-Password generator}"
+networks:
+  traefik_default:
+    external: true
 
-      # Watchtower
-      - "com.centurylinklabs.watchtower.enable=true"
+
+
