@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Background Shield/Card Circle -->
+  <circle cx="256" cy="256" r="240" fill="#1e293b" stroke="#3b82f6" stroke-width="16"/>
+  
+  <!-- Penguin Body -->
+  <ellipse cx="256" cy="280" rx="130" ry="150" fill="#0f172a"/>
+  <!-- Penguin White Belly -->
+  <ellipse cx="256" cy="295" rx="90" ry="115" fill="#f8fafc"/>
+  
+  <!-- Head / Face Mask -->
+  <path d="M 156 180 C 156 120, 356 120, 356 180 C 356 220, 310 240, 256 240 C 202 240, 156 220, 156 180 Z" fill="#0f172a"/>
+  
+  <!-- Eyes -->
+  <circle cx="215" cy="185" r="14" fill="#f8fafc"/>
+  <circle cx="215" cy="185" r="6" fill="#0f172a"/>
+  <circle cx="297" cy="185" r="14" fill="#f8fafc"/>
+  <circle cx="297" cy="185" r="6" fill="#0f172a"/>
+  
+  <!-- Beak -->
+  <polygon points="256,200 236,225 276,225" fill="#f59e0b"/>
+  
+  <!-- Feet -->
+  <ellipse cx="200" cy="415" rx="35" ry="15" fill="#f59e0b"/>
+  <ellipse cx="312" cy="415" rx="35" ry="15" fill="#f59e0b"/>
+  
+  <!-- Mini Lock Badge (Security theme) -->
+  <g transform="translate(320, 80) scale(1.2)">
+    <rect x="0" y="25" width="50" height="40" rx="8" fill="#3b82f6"/>
+    <path d="M 12 25 L 12 15 C 12 6, 38 6, 38 15 L 38 25" fill="none" stroke="#3b82f6" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="25" cy="42" r="5" fill="#ffffff"/>
+    <path d="M 25 47 L 25 54" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>
