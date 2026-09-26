@@ -33,31 +33,27 @@ A modern web application for generating secure character passwords and word pass
 * **Deployment**: Docker & Docker Compose (with Traefik reverse proxy and Homepage integration support)
 
 
-
----
-
-## Configuration (`.env`)
-
-
-
-Configure your environment variables using the following template:
-
-```env
-DOMAIN=yourdomain.com
-SERVICE=pass
-SERVICE_NAME=Penguin Pass
-GROUP=Applications
-DESCRIPTION=Password Generator
-
-```
-
 ---
 
 ## Running with Docker
 
+### Development / Local Deployment
 
 
-### Production (with Traefik)
+
+To run a standalone container locally mapping port `8080` to the internal port `8000`:
+
+```yaml
+services:
+  penguin-pass:
+    image: mmozzano/penguin-pass:latest
+    ports:
+      - "8080:8000"
+    restart: unless-stopped
+
+```
+
+### Production (with Traefik and Homepage)
 
 
 
@@ -93,18 +89,19 @@ networks:
 
 ```
 
-### Development / Local Deployment
+---
+
+## Configuration (`.env`) (required only if running the production container with Traefik and Homepage)
 
 
 
-To run a standalone container locally mapping port `8080` to the internal port `8000`:
+Configure your environment variables using the following template:
 
-```yaml
-services:
-  penguin-pass:
-    image: mmozzano/penguin-pass:latest
-    ports:
-      - "8080:8000"
-    restart: unless-stopped
+```env
+DOMAIN=yourdomain.com
+SERVICE=pass
+SERVICE_NAME=Penguin Pass
+GROUP=Applications
+DESCRIPTION=Password Generator
 
 ```
