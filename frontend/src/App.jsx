@@ -4,7 +4,7 @@ import pkg from '../package.json'
 
 export default function App() {
   const [mode, setMode] = useState('chars') // 'chars' or 'passphrase'
-  
+
   // Check localStorage first, otherwise fallback to system preference
   const [themeKey, setThemeKey] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -26,7 +26,9 @@ export default function App() {
   // Passphrase options
   const [wordCount, setWordCount] = useState(4)
   const [delimiter, setDelimiter] = useState('-')
-  const [includeNumber, setIncludeNumber] = useState(true)
+  const [includeNumber, setIncludeNumber] = useState(false)
+  const [randomCase, setRandomCase] = useState(false) // Added state
+  const [minWordLength, setMinWordLength] = useState(3)
   const [maxWordLength, setMaxWordLength] = useState(8)
 
   // Output list state & copy status map (index -> status text)
@@ -52,7 +54,7 @@ export default function App() {
         const data = await res.json()
         setPasswords(data.passwords)
       } else {
-        const res = await fetch(`/api/generate/passphrase?word_count=${wordCount}&delimiter=${encodeURIComponent(delimiter)}&include_number=${includeNumber}&max_word_length=${maxWordLength}&count=5`)
+        const res = await fetch(`/api/generate/passphrase?word_count=${wordCount}&delimiter=${encodeURIComponent(delimiter)}&include_number=${includeNumber}&random_case=${randomCase}&min_word_length=${minWordLength}&max_word_length=${maxWordLength}&count=5`)
         const data = await res.json()
         setPasswords(data.passphrases)
       }
@@ -63,7 +65,7 @@ export default function App() {
 
   useEffect(() => {
     generatePasswords()
-  }, [mode, length, useSymbols, useNumbers, useUppercase, wordCount, delimiter, includeNumber, maxWordLength])
+  }, [mode, length, useSymbols, useNumbers, useUppercase, wordCount, delimiter, includeNumber, randomCase, minWordLength, maxWordLength])
 
   const handleCopySingle = (text, index) => {
     navigator.clipboard.writeText(text)
@@ -258,6 +260,20 @@ export default function App() {
               </div>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                  <span>Min Word Length:</span>
+                  <strong>{minWordLength} chars</strong>
+                </div>
+                <input
+                  type="range"
+                  min="2"
+                  max="10"
+                  value={minWordLength}
+                  onChange={(e) => setMinWordLength(parseInt(e.target.value, 10))}
+                  style={{ width: '100%', cursor: 'pointer' }}
+                />
+              </div>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
                   <span>Max Word Length:</span>
                   <strong>{maxWordLength} chars</strong>
                 </div>
@@ -280,10 +296,14 @@ export default function App() {
                   style={{ ...inputStyle, width: '80px' }}
                 />
               </div>
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" checked={includeNumber} onChange={(e) => setIncludeNumber(e.target.checked)} />
                   Include Random Numbers in Words
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                  <input type="checkbox" checked={randomCase} onChange={(e) => setRandomCase(e.target.checked)} />
+                  Randomize Character Case
                 </label>
               </div>
             </>
