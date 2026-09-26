@@ -1,8 +1,6 @@
 services:
   penguin-pass:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: mmozzano/penguin-pass:latest
     restart: unless-stopped
     container_name: ${SERVICE}
     networks:
