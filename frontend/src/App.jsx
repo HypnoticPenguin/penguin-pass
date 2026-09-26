@@ -10,14 +10,13 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('penguin_pass_theme')
       if (savedTheme) return savedTheme
-
       if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         return 'dark'
       }
     }
     return 'light'
   })
-  
+
   // Character options
   const [length, setLength] = useState(16)
   const [useSymbols, setUseSymbols] = useState(true)
@@ -87,43 +86,53 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'sans-serif', minHeight: '100vh', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-      <div style={{ padding: '2rem', maxWidth: '650px', margin: '0 auto', width: '100%', flex: 1, boxSizing: 'border-box' }}>
+      <div style={{ padding: '1rem 1rem 2rem 1rem', maxWidth: '650px', margin: '0 auto', width: '100%', flex: 1, boxSizing: 'border-box' }} className="desktop-container">
         
+        <style>{`
+          @media (min-width: 640px) {
+            .desktop-container {
+              padding-top: 2.5rem !important;
+              padding-left: 1.5rem !important;
+              padding-right: 1.5rem !important;
+            }
+          }
+        `}</style>
+
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
             <img 
               src="/penguin-logo.svg" 
               alt="Penguin Pass Logo" 
-              style={{ width: '42px', height: '42px', objectFit: 'contain' }} 
+              style={{ width: '36px', height: '36px', objectFit: 'contain', flexShrink: 0 }} 
             />
-            <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Penguin Pass</h1>
+            <h1 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.5rem)', whiteSpace: 'nowrap' }}>Penguin Pass</h1>
           </div>
           <button
             onClick={toggleTheme}
-            style={{ padding: '0.4rem 0.8rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}
           >
-            {themeKey === 'light' ? '🌙 Dark' : '☀️ Light'}
+            {themeKey === 'light' ? 'Dark Mode' : 'Light Mode'}
           </button>
         </div>
 
         {/* Output List Box */}
         <div style={{ background: currentTheme.cardBg, borderRadius: '8px', border: `1px solid ${currentTheme.border}`, marginBottom: '1.5rem', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
           <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: currentTheme.bg }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText }}>Generated Options</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText }}>
+              {mode === 'chars' ? 'Generated Passwords' : 'Generated Passphrases'}
+            </span>
             <button
               onClick={generatePasswords}
               style={{ padding: '0.3rem 0.6rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
             >
-              🔄 Refresh All
+                Refresh All
             </button>
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {passwords.map((pwd, idx) => {
               const rowBg = idx % 2 === 0 ? currentTheme.cardBg : currentTheme.bg
               const isCopied = copiedIndex === idx
-
               return (
                 <div
                   key={idx}
@@ -136,7 +145,7 @@ export default function App() {
                     borderBottom: idx < passwords.length - 1 ? `1px solid ${currentTheme.border}` : 'none'
                   }}
                 >
-                  <span style={{ fontFamily: 'monospace', fontSize: '1rem', wordBreak: 'break-all', marginRight: '1rem' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '1rem', wordBreak: 'break-all', marginRight: '1rem', flex: 1 }}>
                     {pwd}
                   </span>
                   <button
@@ -145,8 +154,10 @@ export default function App() {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '0.3rem',
                       padding: '0.35rem 0.65rem',
+                      minWidth: '75px',
                       background: isCopied ? '#4CAF50' : currentTheme.bg,
                       color: isCopied ? '#fff' : currentTheme.text,
                       border: `1px solid ${isCopied ? '#4CAF50' : currentTheme.border}`,
@@ -158,7 +169,6 @@ export default function App() {
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    <span>{isCopied ? '✓' : '📋'}</span>
                     <span>{isCopied ? 'Copied' : 'Copy'}</span>
                   </button>
                 </div>
@@ -202,7 +212,6 @@ export default function App() {
                   style={{ width: '100%', cursor: 'pointer' }}
                 />
               </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" checked={useSymbols} onChange={(e) => setUseSymbols(e.target.checked)} />
@@ -234,7 +243,6 @@ export default function App() {
                   style={{ width: '100%', cursor: 'pointer' }}
                 />
               </div>
-
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
                   <span>Max Word Length:</span>
@@ -249,7 +257,6 @@ export default function App() {
                   style={{ width: '100%', cursor: 'pointer' }}
                 />
               </div>
-
               <div>
                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Custom Delimiter</label>
                 <input
@@ -260,7 +267,6 @@ export default function App() {
                   style={{ ...inputStyle, width: '80px' }}
                 />
               </div>
-
               <div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" checked={includeNumber} onChange={(e) => setIncludeNumber(e.target.checked)} />
@@ -271,7 +277,6 @@ export default function App() {
           )}
 
         </div>
-
       </div>
 
       <footer style={{ textAlign: 'center', padding: '1rem', borderTop: `1px solid ${currentTheme.border}`, color: currentTheme.subText, fontSize: '0.85rem', background: currentTheme.cardBg }}>
