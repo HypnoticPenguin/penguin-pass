@@ -16,13 +16,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load all words from words.txt into memory
+# Load and sanitize all words from words.txt into memory (removing spaces and non-alpha characters)
 ALL_WORDS = ["apple", "banana", "galaxy", "penguin", "rocket", "storm", "tiger", "winter"]
 words_path = os.path.join(os.path.dirname(__file__), "words.txt")
 if os.path.exists(words_path):
     try:
         with open(words_path, "r", encoding="utf-8") as f:
-            loaded_words = [line.strip().lower() for line in f if line.strip()]
+            loaded_words = []
+            for line in f:
+                # Strip spaces/newlines and convert to lowercase
+                cleaned = line.strip().lower()
+                # Ensure the word only contains alphabetic characters (a-z) and no spaces/symbols
+                if cleaned and cleaned.isalpha():
+                    loaded_words.append(cleaned)
             if loaded_words:
                 ALL_WORDS = loaded_words
     except Exception as e:
@@ -56,7 +62,7 @@ def generate_passphrase(
     word_count: int = Query(4, ge=2, le=10),
     delimiter: str = Query("-"),
     include_number: bool = False,
-    random_case: bool = False,  # Added parameter
+    random_case: bool = False,
     min_word_length: int = Query(3, ge=2, le=10),
     max_word_length: int = Query(8, ge=3, le=20),
     count: int = Query(5, ge=1, le=10)

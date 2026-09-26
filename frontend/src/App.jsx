@@ -27,7 +27,7 @@ export default function App() {
   const [wordCount, setWordCount] = useState(4)
   const [delimiter, setDelimiter] = useState('-')
   const [includeNumber, setIncludeNumber] = useState(false)
-  const [randomCase, setRandomCase] = useState(false) // Added state
+  const [randomCase, setRandomCase] = useState(false)
   const [minWordLength, setMinWordLength] = useState(3)
   const [maxWordLength, setMaxWordLength] = useState(8)
 
@@ -98,6 +98,21 @@ export default function App() {
             gap: 1rem;
             margin-bottom: 2rem;
           }
+          /* Custom thinner scrollbar for password rows */
+          .custom-scrollbar::-webkit-scrollbar {
+            height: 3px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 2px 0;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: ${currentTheme.border};
+            border-radius: 1.5px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: ${currentTheme.subText};
+          }
           @media (min-width: 480px) {
             .header-container {
               flex-direction: row;
@@ -160,9 +175,11 @@ export default function App() {
                     borderBottom: idx < passwords.length - 1 ? `1px solid ${currentTheme.border}` : 'none'
                   }}
                 >
-                  <span style={{ fontFamily: 'monospace', fontSize: '1rem', wordBreak: 'break-all', marginRight: '1rem', flex: 1 }}>
-                    {pwd}
-                  </span>
+                  <div style={{ overflowX: 'auto', marginRight: '1rem', flex: 1, paddingTop: '6px', paddingBottom: '6px' }} className="custom-scrollbar">
+                    <span style={{ fontFamily: 'monospace', fontSize: '1rem', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                      {pwd}
+                    </span>
+                  </div>
                   <button
                     onClick={() => handleCopySingle(pwd, idx)}
                     title="Copy to clipboard"
