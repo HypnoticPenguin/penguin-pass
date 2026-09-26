@@ -89,7 +89,20 @@ export default function App() {
       <div style={{ padding: '1rem 1rem 2rem 1rem', maxWidth: '650px', margin: '0 auto', width: '100%', flex: 1, boxSizing: 'border-box' }} className="desktop-container">
         
         <style>{`
-          @media (min-width: 640px) {
+          .header-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 2rem;
+          }
+          @media (min-width: 480px) {
+            .header-container {
+              flex-direction: row;
+              justify-content: space-between;
+              align-items: center;
+              gap: 0.5rem;
+            }
             .desktop-container {
               padding-top: 2.5rem !important;
               padding-left: 1.5rem !important;
@@ -99,7 +112,7 @@ export default function App() {
         `}</style>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '0.5rem' }}>
+        <div className="header-container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
             <img 
               src="/penguin-logo.svg" 
@@ -110,7 +123,7 @@ export default function App() {
           </div>
           <button
             onClick={toggleTheme}
-            style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
           >
             {themeKey === 'light' ? 'Dark Mode' : 'Light Mode'}
           </button>
