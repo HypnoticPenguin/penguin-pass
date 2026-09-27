@@ -4,8 +4,6 @@ import pkg from '../package.json'
 
 export default function App() {
   const [mode, setMode] = useState('chars') // 'chars' or 'passphrase'
-
-  // Check localStorage first, otherwise fallback to system preference
   const [themeKey, setThemeKey] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('penguin_pass_theme')
@@ -22,6 +20,7 @@ export default function App() {
   const [useSymbols, setUseSymbols] = useState(true)
   const [useNumbers, setUseNumbers] = useState(true)
   const [useUppercase, setUseUppercase] = useState(true)
+  const [excludeAmbiguous, setExcludeAmbiguous] = useState(false)
 
   // Passphrase options
   const [wordCount, setWordCount] = useState(4)
@@ -31,9 +30,12 @@ export default function App() {
   const [minWordLength, setMinWordLength] = useState(3)
   const [maxWordLength, setMaxWordLength] = useState(8)
 
-  // Output list state & copy status map (index -> status text)
+  // Output list state & copy status map
   const [passwords, setPasswords] = useState([])
   const [copiedIndex, setCopiedIndex] = useState(null)
+  
+  // Modal state for viewing password with character numbers
+  const [modalPassword, setModalPassword] = useState(null)
 
   const currentTheme = themes[themeKey] || themes.light
 
@@ -42,15 +44,13 @@ export default function App() {
     document.body.style.color = currentTheme.text
     document.body.style.margin = '0'
     document.body.style.transition = 'background-color 0.3s ease, color 0.3s ease'
-    
-    // Save theme preference when changed manually
     localStorage.setItem('penguin_pass_theme', themeKey)
   }, [themeKey, currentTheme])
 
   const generatePasswords = async () => {
     try {
       if (mode === 'chars') {
-        const res = await fetch(`/api/generate/chars?length=${length}&symbols=${useSymbols}&numbers=${useNumbers}&uppercase=${useUppercase}&count=5`)
+        const res = await fetch(`/api/generate/chars?length=${length}&symbols=${useSymbols}&numbers=${useNumbers}&uppercase=${useUppercase}&exclude_ambiguous=${excludeAmbiguous}&count=5`)
         const data = await res.json()
         setPasswords(data.passwords)
       } else {
@@ -65,7 +65,7 @@ export default function App() {
 
   useEffect(() => {
     generatePasswords()
-  }, [mode, length, useSymbols, useNumbers, useUppercase, wordCount, delimiter, includeNumber, randomCase, minWordLength, maxWordLength])
+  }, [mode, length, useSymbols, useNumbers, useUppercase, excludeAmbiguous, wordCount, delimiter, includeNumber, randomCase, minWordLength, maxWordLength])
 
   const handleCopySingle = (text, index) => {
     navigator.clipboard.writeText(text)
@@ -98,7 +98,6 @@ export default function App() {
             gap: 1rem;
             margin-bottom: 2rem;
           }
-          /* Custom thinner scrollbar for password rows */
           .custom-scrollbar::-webkit-scrollbar {
             height: 3px;
           }
@@ -150,13 +149,13 @@ export default function App() {
         <div style={{ background: currentTheme.cardBg, borderRadius: '8px', border: `1px solid ${currentTheme.border}`, marginBottom: '1.5rem', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
           <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: currentTheme.bg }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText }}>
-              {mode === 'chars' ? 'Generated Passwords' : 'Generated Passphrases'}
+              {mode === 'chars' ? 'Generated Passwords (Click row to inspect)' : 'Generated Passphrases (Click row to inspect)'}
             </span>
             <button
               onClick={generatePasswords}
               style={{ padding: '0.3rem 0.6rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
             >
-                Refresh All
+              Refresh All
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -166,14 +165,17 @@ export default function App() {
               return (
                 <div
                   key={idx}
+                  onClick={() => setModalPassword(pwd)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '0.85rem 1rem',
                     background: rowBg,
-                    borderBottom: idx < passwords.length - 1 ? `1px solid ${currentTheme.border}` : 'none'
+                    borderBottom: idx < passwords.length - 1 ? `1px solid ${currentTheme.border}` : 'none',
+                    cursor: 'pointer'
                   }}
+                  title="Click to view with character positions"
                 >
                   <div style={{ overflowX: 'auto', marginRight: '1rem', flex: 1, paddingTop: '6px', paddingBottom: '6px' }} className="custom-scrollbar">
                     <span style={{ fontFamily: 'monospace', fontSize: '1rem', whiteSpace: 'nowrap', display: 'inline-block' }}>
@@ -181,7 +183,10 @@ export default function App() {
                     </span>
                   </div>
                   <button
-                    onClick={() => handleCopySingle(pwd, idx)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCopySingle(pwd, idx)
+                    }}
                     title="Copy to clipboard"
                     style={{
                       display: 'flex',
@@ -257,6 +262,10 @@ export default function App() {
                   <input type="checkbox" checked={useUppercase} onChange={(e) => setUseUppercase(e.target.checked)} />
                   Include Uppercase Letters (A-Z)
                 </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                  <input type="checkbox" checked={excludeAmbiguous} onChange={(e) => setExcludeAmbiguous(e.target.checked)} />
+                  Exclude Ambiguous Characters (i, I, l, L, 1, o, O, 0)
+                </label>
               </div>
             </>
           ) : (
@@ -325,9 +334,54 @@ export default function App() {
               </div>
             </>
           )}
-
         </div>
       </div>
+
+      {/* Password Inspection Modal with Character Numbering */}
+      {modalPassword && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 1000 }}>
+          <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: '8px', padding: '1.5rem', maxWidth: '600px', width: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Password Inspection ({modalPassword.length} characters)</h3>
+              <button onClick={() => setModalPassword(null)} style={{ background: 'transparent', border: 'none', color: currentTheme.text, fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}>&times;</button>
+            </div>
+            
+            <div style={{ background: currentTheme.bg, padding: '1rem', borderRadius: '6px', border: `1px solid ${currentTheme.border}`, fontFamily: 'monospace', fontSize: '1.3rem', wordBreak: 'break-all', textAlign: 'center', marginBottom: '1.5rem' }}>
+              {modalPassword}
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText, display: 'block', marginBottom: '0.5rem' }}>Character Position Index:</span>
+              <div style={{ display: 'flex', overflowX: 'auto', gap: '6px', paddingBottom: '6px' }} className="custom-scrollbar">
+                {modalPassword.split('').map((char, i) => (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '24px', background: currentTheme.bg, border: `1px solid ${currentTheme.border}`, borderRadius: '4px', padding: '4px 0' }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 'bold' }}>{char}</span>
+                    <span style={{ fontSize: '0.65rem', color: currentTheme.subText, marginTop: '2px' }}>{i + 1}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(modalPassword)
+                  alert('Copied to clipboard!')
+                }}
+                style={{ padding: '0.5rem 1rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Copy Password
+              </button>
+              <button
+                onClick={() => setModalPassword(null)}
+                style={{ padding: '0.5rem 1rem', background: currentTheme.bg, color: currentTheme.text, border: `1px solid ${currentTheme.border}`, borderRadius: '4px', cursor: 'pointer' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer style={{ textAlign: 'center', padding: '1rem', borderTop: `1px solid ${currentTheme.border}`, color: currentTheme.subText, fontSize: '0.85rem', background: currentTheme.cardBg }}>
         Penguin Pass v{pkg.version} &copy; {new Date().getFullYear()}

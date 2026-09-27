@@ -1,5 +1,5 @@
 import os
-import random
+import secrets
 import string
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load and sanitize all words from words.txt into memory (removing spaces and non-alpha characters)
+# Load and sanitize all words from words.txt into memory
 ALL_WORDS = ["apple", "banana", "galaxy", "penguin", "rocket", "storm", "tiger", "winter"]
 words_path = os.path.join(os.path.dirname(__file__), "words.txt")
 if os.path.exists(words_path):
@@ -24,9 +24,7 @@ if os.path.exists(words_path):
         with open(words_path, "r", encoding="utf-8") as f:
             loaded_words = []
             for line in f:
-                # Strip spaces/newlines and convert to lowercase
                 cleaned = line.strip().lower()
-                # Ensure the word only contains alphabetic characters (a-z) and no spaces/symbols
                 if cleaned and cleaned.isalpha():
                     loaded_words.append(cleaned)
             if loaded_words:
@@ -40,6 +38,7 @@ def generate_chars(
     symbols: bool = True,
     numbers: bool = True,
     uppercase: bool = True,
+    exclude_ambiguous: bool = False,
     count: int = Query(5, ge=1, le=10)
 ):
     chars = string.ascii_lowercase
@@ -50,11 +49,17 @@ def generate_chars(
     if symbols:
         chars += "!@#$%^&*()_+-=[]{}|;:,.<>?"
         
+    if exclude_ambiguous:
+        ambiguous = "iIlL1oO0"
+        chars = "".join(c for c in chars if c not in ambiguous)
+        if not chars:
+            chars = string.ascii_lowercase  # Fallback safety
+
     passwords = []
     for _ in range(count):
-        password = "".join(random.choice(chars) for _ in range(length))
+        password = "".join(secrets.choice(chars) for _ in range(length))
         passwords.append(password)
-             
+        
     return {"passwords": passwords}
 
 @app.get("/api/generate/passphrase")
@@ -67,25 +72,24 @@ def generate_passphrase(
     max_word_length: int = Query(8, ge=3, le=20),
     count: int = Query(5, ge=1, le=10)
 ):
-    # Filter words dynamically based on both min and max length criteria
     filtered_words = [w for w in ALL_WORDS if min_word_length <= len(w) <= max_word_length]
     if not filtered_words:
-        filtered_words = ALL_WORDS  # Fallback if filter is too restrictive
-        
+        filtered_words = ALL_WORDS
+
     passphrases = []
     for _ in range(count):
-        chosen_words = [random.choice(filtered_words) for _ in range(word_count)]
+        chosen_words = [secrets.choice(filtered_words) for _ in range(word_count)]
         if include_number:
-            rand_idx = random.randint(0, word_count - 1)
-            chosen_words[rand_idx] += str(random.randint(10, 99))
-                 
+            rand_idx = secrets.randbelow(word_count)
+            chosen_words[rand_idx] += str(secrets.randbelow(90) + 10)
+            
         phrase = delimiter.join(chosen_words)
         
         if random_case:
-            phrase = "".join(c.upper() if random.choice([True, False]) else c.lower() for c in phrase)
+            phrase = "".join(c.upper() if secrets.choice([True, False]) else c.lower() for c in phrase)
             
         passphrases.append(phrase)
-             
+        
     return {"passphrases": passphrases}
 
 # Mount static frontend build files if they exist (Docker production mode)
