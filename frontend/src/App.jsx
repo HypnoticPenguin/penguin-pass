@@ -33,7 +33,7 @@ export default function App() {
   // Output list state & copy status map
   const [passwords, setPasswords] = useState([])
   const [copiedIndex, setCopiedIndex] = useState(null)
-  
+
   // Modal state for viewing password with character numbers
   const [modalPassword, setModalPassword] = useState(null)
 
@@ -131,10 +131,10 @@ export default function App() {
         <div className="header-container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
             <img 
-              src="/penguin-logo.svg" 
-              alt="Penguin Pass Logo" 
-              style={{ width: '36px', height: '36px', objectFit: 'contain', flexShrink: 0 }} 
-            />
+               src="/penguin-logo.svg" 
+               alt="Penguin Pass Logo" 
+               style={{ width: '36px', height: '36px', objectFit: 'contain', flexShrink: 0 }} 
+             />
             <h1 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.5rem)', whiteSpace: 'nowrap' }}>Penguin Pass</h1>
           </div>
           <button
@@ -232,7 +232,6 @@ export default function App() {
 
         {/* Controls Card */}
         <div style={{ background: currentTheme.cardBg, padding: '1.5rem', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, display: 'flex', flexDirection: 'column', gap: '1.25rem', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-          
           {mode === 'chars' ? (
             <>
               <div>
@@ -349,7 +348,6 @@ export default function App() {
             <div style={{ background: currentTheme.bg, padding: '1rem', borderRadius: '6px', border: `1px solid ${currentTheme.border}`, fontFamily: 'monospace', fontSize: '1.3rem', wordBreak: 'break-all', textAlign: 'center', marginBottom: '1.5rem' }}>
               {modalPassword}
             </div>
-
             <div style={{ marginBottom: '1.5rem' }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText, display: 'block', marginBottom: '0.5rem' }}>Character Position Index:</span>
               <div style={{ display: 'flex', overflowX: 'auto', gap: '6px', paddingBottom: '6px' }} className="custom-scrollbar">
@@ -361,7 +359,6 @@ export default function App() {
                 ))}
               </div>
             </div>
-
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
               <button
                 onClick={() => {
@@ -393,8 +390,15 @@ export default function App() {
         </div>
       )}
 
-      <footer style={{ textAlign: 'center', padding: '1rem', borderTop: `1px solid ${currentTheme.border}`, color: currentTheme.subText, fontSize: '0.85rem', background: currentTheme.cardBg }}>
-        Penguin Pass v{pkg.version} &copy; {new Date().getFullYear()}
+      <footer style={{ textAlign: 'center', padding: '1rem', borderTop: `1px solid ${currentTheme.border}`, color: currentTheme.subText, fontSize: '0.85rem', background: currentTheme.cardBg, fontFamily: 'sans-serif' }}>
+        <a 
+          href="https://github.com/HypnoticPenguin/penguin-pass"
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: currentTheme.primary, textDecoration: 'none', fontFamily: 'sans-serif' }}
+        >
+          Penguin Pass v{pkg.version}
+        </a> &copy; {new Date().getFullYear()}
       </footer>
     </div>
   )
