@@ -366,11 +366,21 @@ export default function App() {
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(modalPassword)
-                  alert('Copied to clipboard!')
+                  setCopiedIndex('modal')
+                  setTimeout(() => setCopiedIndex(null), 2000)
                 }}
-                style={{ padding: '0.5rem 1rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: copiedIndex === 'modal' ? '#4CAF50' : currentTheme.primary,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  transition: 'background 0.2s ease'
+                }}
               >
-                Copy Password
+                {copiedIndex === 'modal' ? 'Copied' : 'Copy Password'}
               </button>
               <button
                 onClick={() => setModalPassword(null)}
