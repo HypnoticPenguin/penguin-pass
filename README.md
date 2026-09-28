@@ -2,11 +2,17 @@
 
 A modern web application for generating secure character passwords and word passphrases, built with a secure backend and responsive frontend.
 
+<p align="left">
+  <img src="frontend/public/pp2.png" width="15%" alt="Penguin Pass Screenshot 1" style="margin: 5px;" />
+  <img src="frontend/public/pp1.png" width="15%" alt="Penguin Pass Screenshot 2" style="margin: 5px;" />
+  <img src="frontend/public/pp3.png" width="15%" alt="Penguin Pass Screenshot 3" style="margin: 5px;" />
+</p>
+
 ## Features
 
 * **Cryptographically Secure**: Utilizes Python's secure `secrets` module for high-entropy random generation.
 * **Character Passwords**: Generate custom-length passwords (6 to 64 characters) with options to include symbols, numbers, uppercase letters, and a filter to **exclude ambiguous characters** (such as `i`, `I`, `l`, `L`, `1`, `o`, `O`, `0`).
-* **Word Passphrases**: Create secure passphrases featuring adjustable word counts, max word lengths, custom delimiters, and optional random numbers.
+* **Word Passphrases**: Generate secure, dictionary-based passphrases from a curated list of 3,000 common English words, featuring adjustable word counts, length filters, custom delimiters, and optional random numbers.
 * **Password Inspection Modal**: Click on any generated password row to open an inspection window that displays the full text along with precise character position indices underneath.
 * **Theme Support**: Toggle seamlessly between Light Mode and Dark Mode, with automatic fallback to your system preferences.
 
