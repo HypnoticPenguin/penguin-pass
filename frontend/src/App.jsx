@@ -20,13 +20,13 @@ export default function App() {
   const [useSymbols, setUseSymbols] = useState(true)
   const [useNumbers, setUseNumbers] = useState(true)
   const [useUppercase, setUseUppercase] = useState(true)
-  const [excludeAmbiguous, setExcludeAmbiguous] = useState(true)
+  const [excludeAmbiguous, setExcludeAmbiguous] = useState(true) // Enabled by default[cite: 1]
 
   // Passphrase options
   const [wordCount, setWordCount] = useState(4)
   const [delimiter, setDelimiter] = useState('-')
   const [includeNumber, setIncludeNumber] = useState(false)
-  const [randomCase, setRandomCase] = useState(false)
+  const [caseStyle, setCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'
   const [minWordLength, setMinWordLength] = useState(3)
   const [maxWordLength, setMaxWordLength] = useState(8)
 
@@ -54,9 +54,22 @@ export default function App() {
         const data = await res.json()
         setPasswords(data.passwords)
       } else {
-        const res = await fetch(`/api/generate/passphrase?word_count=${wordCount}&delimiter=${encodeURIComponent(delimiter)}&include_number=${includeNumber}&random_case=${randomCase}&min_word_length=${minWordLength}&max_word_length=${maxWordLength}&count=5`)
+        // Map caseStyle selection to backend query parameters
+        const randomCaseParam = caseStyle === 'random' ? 'true' : 'false'
+        const res = await fetch(`/api/generate/passphrase?word_count=${wordCount}&delimiter=${encodeURIComponent(delimiter)}&include_number=${includeNumber}&random_case=${randomCaseParam}&min_word_length=${minWordLength}&max_word_length=${maxWordLength}&count=5`)
         const data = await res.json()
-        setPasswords(data.passphrases)
+        
+        let results = data.passphrases
+        // Apply frontend post-formatting for Title Case or ALL CAPS if needed
+        if (caseStyle === 'title') {
+          results = results.map(phrase => 
+            phrase.split(delimiter).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(delimiter)
+          )
+        } else if (caseStyle === 'upper') {
+          results = results.map(phrase => phrase.toUpperCase())
+        }
+        
+        setPasswords(results)
       }
     } catch (err) {
       console.error('Generation failed', err)
@@ -65,7 +78,7 @@ export default function App() {
 
   useEffect(() => {
     generatePasswords()
-  }, [mode, length, useSymbols, useNumbers, useUppercase, excludeAmbiguous, wordCount, delimiter, includeNumber, randomCase, minWordLength, maxWordLength])
+  }, [mode, length, useSymbols, useNumbers, useUppercase, excludeAmbiguous, wordCount, delimiter, includeNumber, caseStyle, minWordLength, maxWordLength])
 
   const handleCopySingle = (text, index) => {
     navigator.clipboard.writeText(text)
@@ -73,8 +86,65 @@ export default function App() {
     setTimeout(() => setCopiedIndex(null), 2000)
   }
 
+  const handleExportAll = () => {
+    if (!passwords || passwords.length === 0) return
+    const textContent = passwords.join('\n')
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `penguin-pass-${mode}-${new Date().toISOString().slice(0, 10)}.txt`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   const toggleTheme = () => {
     setThemeKey((prev) => (prev === 'light' ? 'dark' : 'light'))
+  }
+
+  // Calculate approximate entropy and strength details for the modal
+  const getPasswordAnalysis = (pwd) => {
+    if (!pwd) return { entropy: 0, label: 'Unknown', color: '#ccc', percentage: 0 }
+    
+    let poolSize = 0
+    const hasLower = /[a-z]/.test(pwd)
+    const hasUpper = /[A-Z]/.test(pwd)
+    const hasNum = /[0-9]/.test(pwd)
+    const hasSymbol = /[^a-zA-Z0-9]/.test(pwd)
+
+    if (hasLower) poolSize += 26
+    if (hasUpper) poolSize += 26
+    if (hasNum) poolSize += 10
+    if (hasSymbol) poolSize += 32 
+    if (poolSize === 0) poolSize = 26
+
+    const entropy = Math.round(pwd.length * Math.log2(poolSize))
+
+    let label = 'Very Strong'
+    let color = '#4CAF50'
+    let percentage = 100
+
+    if (entropy < 35) {
+      label = 'Weak'
+      color = '#f44336'
+      percentage = 25
+    } else if (entropy < 60) {
+      label = 'Fair'
+      color = '#ff9800'
+      percentage = 50
+    } else if (entropy < 85) {
+      label = 'Good'
+      color = '#2196F3'
+      percentage = 75
+    } else if (entropy < 120) {
+      label = 'Strong'
+      color = '#8bc34a'
+      percentage = 90
+    }
+
+    return { entropy, label, color, percentage }
   }
 
   const inputStyle = {
@@ -130,11 +200,11 @@ export default function App() {
         {/* Header */}
         <div className="header-container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-            <img 
-               src="/penguin-logo.svg" 
-               alt="Penguin Pass Logo" 
-               style={{ width: '36px', height: '36px', objectFit: 'contain', flexShrink: 0 }} 
-             />
+            <img
+              src="/penguin-logo.svg"
+              alt="Penguin Pass Logo"
+              style={{ width: '36px', height: '36px', objectFit: 'contain', flexShrink: 0 }}
+            />
             <h1 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.5rem)', whiteSpace: 'nowrap' }}>Penguin Pass</h1>
           </div>
           <button
@@ -151,12 +221,21 @@ export default function App() {
             <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText }}>
               {mode === 'chars' ? 'Generated Passwords (Click row to inspect)' : 'Generated Passphrases (Click row to inspect)'}
             </span>
-            <button
-              onClick={generatePasswords}
-              style={{ padding: '0.3rem 0.6rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
-            >
-              Refresh All
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={handleExportAll}
+                style={{ padding: '0.3rem 0.6rem', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                title="Download all passwords as a text file"
+              >
+                Export All
+              </button>
+              <button
+                onClick={generatePasswords}
+                style={{ padding: '0.3rem 0.6rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+              >
+                Refresh All
+              </button>
+            </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {passwords.map((pwd, idx) => {
@@ -311,24 +390,59 @@ export default function App() {
                   style={{ width: '100%', cursor: 'pointer' }}
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Custom Delimiter</label>
-                <input
-                  type="text"
-                  value={delimiter}
-                  onChange={(e) => setDelimiter(e.target.value)}
-                  maxLength={5}
-                  style={{ ...inputStyle, width: '80px' }}
-                />
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Delimiter</label>
+                  <input
+                    type="text"
+                    value={delimiter}
+                    onChange={(e) => setDelimiter(e.target.value)}
+                    maxLength={5}
+                    style={{ ...inputStyle, width: '80px' }}
+                  />
+                </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+
+              {/* Case Style Selector (Modern Segmented Control) */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Case Style</label>
+                <div style={{ display: 'flex', background: currentTheme.bg, padding: '3px', borderRadius: '6px', border: `1px solid ${currentTheme.border}` }}>
+                  {[
+                    { id: 'lower', label: 'lower' },
+                    { id: 'title', label: 'Title Case' },
+                    { id: 'upper', label: 'UPPER' },
+                    { id: 'random', label: 'Random' }
+                  ].map((style) => {
+                    const isActive = caseStyle === style.id
+                    return (
+                      <button
+                        key={style.id}
+                        onClick={() => setCaseStyle(style.id)}
+                        style={{
+                          flex: 1,
+                          padding: '0.4rem 0.2rem',
+                          background: isActive ? currentTheme.cardBg : 'transparent',
+                          color: isActive ? currentTheme.primary : currentTheme.subText,
+                          border: isActive ? `1px solid ${currentTheme.border}` : '1px solid transparent',
+                          borderRadius: '4px',
+                          fontSize: '0.8rem',
+                          fontWeight: isActive ? 'bold' : 'normal',
+                          cursor: 'pointer',
+                          boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {style.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.25rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" checked={includeNumber} onChange={(e) => setIncludeNumber(e.target.checked)} />
                   Include Random Numbers in Words
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={randomCase} onChange={(e) => setRandomCase(e.target.checked)} />
-                  Randomize Character Case
                 </label>
               </div>
             </>
@@ -336,59 +450,77 @@ export default function App() {
         </div>
       </div>
 
-      {/* Password Inspection Modal with Character Numbering */}
-      {modalPassword && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 1000 }}>
-          <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: '8px', padding: '1.5rem', maxWidth: '600px', width: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Password Inspection ({modalPassword.length} characters)</h3>
-              <button onClick={() => setModalPassword(null)} style={{ background: 'transparent', border: 'none', color: currentTheme.text, fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}>&times;</button>
-            </div>
-            
-            <div style={{ background: currentTheme.bg, padding: '1rem', borderRadius: '6px', border: `1px solid ${currentTheme.border}`, fontFamily: 'monospace', fontSize: '1.3rem', wordBreak: 'break-all', textAlign: 'center', marginBottom: '1.5rem' }}>
-              {modalPassword}
-            </div>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText, display: 'block', marginBottom: '0.5rem' }}>Character Position Index:</span>
-              <div style={{ display: 'flex', overflowX: 'auto', gap: '6px', paddingBottom: '6px' }} className="custom-scrollbar">
-                {modalPassword.split('').map((char, i) => (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '24px', background: currentTheme.bg, border: `1px solid ${currentTheme.border}`, borderRadius: '4px', padding: '4px 0' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 'bold' }}>{char}</span>
-                    <span style={{ fontSize: '0.65rem', color: currentTheme.subText, marginTop: '2px' }}>{i + 1}</span>
-                  </div>
-                ))}
+      {/* Password Inspection Modal with Character Numbering & Entropy Analysis */}
+      {modalPassword && (() => {
+        const analysis = getPasswordAnalysis(modalPassword)
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 1000 }}>
+            <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: '8px', padding: '2rem', maxWidth: '700px', width: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Password Inspection ({modalPassword.length} characters)</h3>
+                <button onClick={() => setModalPassword(null)} style={{ background: 'transparent', border: 'none', color: currentTheme.text, fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}>&times;</button>
+              </div>
+              
+              <div style={{ background: currentTheme.bg, padding: '1.25rem', borderRadius: '6px', border: `1px solid ${currentTheme.border}`, fontFamily: 'monospace', fontSize: '1.6rem', wordBreak: 'break-all', textAlign: 'center', marginBottom: '1.5rem' }}>
+                {modalPassword}
+              </div>
+
+              {/* Security Analysis & Entropy Indicator Section */}
+              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: currentTheme.bg, borderRadius: '6px', border: `1px solid ${currentTheme.border}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText }}>Security Analysis</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: analysis.color }}>
+                    {analysis.label} ({analysis.entropy} bits entropy)
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: currentTheme.border, borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: `${analysis.percentage}%`, height: '100%', background: analysis.color, transition: 'width 0.3s ease' }}></div>
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText, display: 'block', marginBottom: '0.5rem' }}>Character Position Index:</span>
+                <div style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '8px' }} className="custom-scrollbar">
+                  {modalPassword.split('').map((char, i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '30px', background: currentTheme.bg, border: `1px solid ${currentTheme.border}`, borderRadius: '4px', padding: '6px 0' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '1.15rem', fontWeight: 'bold' }}>{char}</span>
+                      <span style={{ fontSize: '0.65rem', color: currentTheme.subText, marginTop: '3px' }}>{i + 1}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(modalPassword)
+                    setCopiedIndex('modal')
+                    setTimeout(() => setCopiedIndex(null), 2000)
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: copiedIndex === 'modal' ? '#4CAF50' : currentTheme.primary,
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    transition: 'background 0.2s ease'
+                  }}
+                >
+                  {copiedIndex === 'modal' ? 'Copied' : 'Copy Password'}
+                </button>
+                <button
+                  onClick={() => setModalPassword(null)}
+                  style={{ padding: '0.5rem 1rem', background: currentTheme.bg, color: currentTheme.text, border: `1px solid ${currentTheme.border}`, borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Close
+                </button>
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(modalPassword)
-                  setCopiedIndex('modal')
-                  setTimeout(() => setCopiedIndex(null), 2000)
-                }}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: copiedIndex === 'modal' ? '#4CAF50' : currentTheme.primary,
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  transition: 'background 0.2s ease'
-                }}
-              >
-                {copiedIndex === 'modal' ? 'Copied' : 'Copy Password'}
-              </button>
-              <button
-                onClick={() => setModalPassword(null)}
-                style={{ padding: '0.5rem 1rem', background: currentTheme.bg, color: currentTheme.text, border: `1px solid ${currentTheme.border}`, borderRadius: '4px', cursor: 'pointer' }}
-              >
-                Close
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       <footer style={{ textAlign: 'center', padding: '1rem', borderTop: `1px solid ${currentTheme.border}`, color: currentTheme.subText, fontSize: '0.85rem', background: currentTheme.cardBg, fontFamily: 'sans-serif' }}>
         <a 
