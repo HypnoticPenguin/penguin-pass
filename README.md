@@ -3,9 +3,9 @@
 A modern web application for generating secure character passwords and word passphrases, built with a secure backend and responsive frontend.
 
 <p align="left">
-  <img src="frontend/public/pp2.png" width="15%" alt="Penguin Pass Screenshot 1" style="margin: 5px;" />
-  <img src="frontend/public/pp1.png" width="15%" alt="Penguin Pass Screenshot 2" style="margin: 5px;" />
-  <img src="frontend/public/pp3.png" width="15%" alt="Penguin Pass Screenshot 3" style="margin: 5px;" />
+  <img src="frontend/public/pp2.png" width="30%" alt="Penguin Pass Screenshot 1" style="margin: 5px;" />
+  <img src="frontend/public/pp1.png" width="30%" alt="Penguin Pass Screenshot 2" style="margin: 5px;" />
+  <img src="frontend/public/pp3.png" width="30%" alt="Penguin Pass Screenshot 3" style="margin: 5px;" />
 </p>
 
 ## Features
