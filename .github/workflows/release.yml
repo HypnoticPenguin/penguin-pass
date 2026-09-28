@@ -32,7 +32,7 @@ jobs:
         id: version-bump
         working-directory: ./frontend
         run: |
-          # Increment patch version (e.g., 1.0.0 -> 1.0.1) using npm[cite: 1]
+          # Increment patch version (e.g., 1.0.0 -> 1.0.1) using npm
           npm version patch --no-git-tag-version
           
           # Extract the new version into an environment variable
@@ -97,8 +97,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: backend/Dockerfile[cite: 1]
+          file: backend/Dockerfile
           push: true
           tags: |
-            mmozzano/penguin-pass:latest[cite: 1]
-            mmozzano/penguin-pass:${{ steps.version-bump.outputs.NEW_VERSION }}[cite: 1]
+            mmozzano/penguin-pass:latest
+            mmozzano/penguin-pass:${{ steps.version-bump.outputs.NEW_VERSION }}
