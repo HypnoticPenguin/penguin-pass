@@ -32,7 +32,7 @@ jobs:
         id: version-bump
         working-directory: ./frontend
         run: |
-          # Increment patch version (e.g., 1.0.0 -> 1.0.1) using npm
+          # Increment patch version (e.g., 1.0.0 -> 1.0.1) using npm[cite: 1]
           npm version patch --no-git-tag-version
           
           # Extract the new version into an environment variable
@@ -44,9 +44,34 @@ jobs:
         env:
           NEW_TAG: v${{ steps.version-bump.outputs.NEW_VERSION }}
         run: |
+          TAG="${{ env.NEW_TAG }}"
+          
+          # 1. Fetch latest changes and tags from origin (GitHub) to prevent conflicts
+          git fetch origin main
+          
+          # 2. If the tag already exists, automatically bump it until unique
+          while git rev-parse "$TAG" >/dev/null 2>&1 || git ls-remote --tags origin | grep -qw "$TAG"; do
+            echo "Tag $TAG already exists. Incrementing version..."
+            cd frontend
+            npm version patch --no-git-tag-version
+            NEW_VERSION=$(node -p "require('./package.json').version")
+            cd ..
+            TAG="v$NEW_VERSION"
+          done
+          
+          FINAL_VERSION=$(echo "$TAG" | sed 's/^v//')
+          echo "NEW_VERSION=$FINAL_VERSION" >> $GITHUB_OUTPUT
+          
+          # 3. Stage and commit package.json explicitly
           git add frontend/package.json
-          git commit -m "chore(release): bump version to ${{ env.NEW_TAG }} [skip ci]"
-          git tag "${{ env.NEW_TAG }}"
+          git commit -m "chore(release): bump version to $TAG [skip ci]" || echo "No changes to commit"
+          
+          # 4. Pull with rebase to incorporate any remote updates safely
+          git pull --rebase origin main
+          
+          # 5. Clean up local duplicate tags, set the fresh tag, and push to GitHub
+          git tag -d "$TAG" 2>/dev/null || true
+          git tag "$TAG"
           git push origin main --tags
 
       - name: Create GitHub Release
@@ -72,8 +97,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: backend/Dockerfile
+          file: backend/Dockerfile[cite: 1]
           push: true
           tags: |
-            mmozzano/penguin-pass:latest
-            mmozzano/penguin-pass:${{ steps.version-bump.outputs.NEW_VERSION }}
+            mmozzano/penguin-pass:latest[cite: 1]
+            mmozzano/penguin-pass:${{ steps.version-bump.outputs.NEW_VERSION }}[cite: 1]
