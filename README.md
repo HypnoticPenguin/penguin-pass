@@ -18,8 +18,21 @@ A modern web application for generating secure character passwords and word pass
 
 ## Running with Docker
 
-### Development / Local Deployment
-To run a standalone container locally mapping port `8080` to the internal port `8000`:
+### Standalone Docker CLI
+
+To run a standalone container directly using the Docker CLI and mapping port `8080` to the internal port `8000`:
+
+```bash
+docker run -d \
+  --name penguin-pass \
+  -p 8080:8000 \
+  --restart unless-stopped \
+  mmozzano/penguin-pass:latest
+
+```
+
+### Docker Compose
+To run a standalone container using Docker Compose and mapping port `8080` to the internal port `8000`:
 
 ```yaml
 services:
@@ -31,9 +44,9 @@ services:
 
 ```
 
-### Production (with Traefik and Homepage)
+### Docker Compose (with Traefik and Homepage labels)
 
-To run the production container with Traefik routing and Homepage labels enabled:
+To run a standalone container using Docker Compose with Traefik routing and Homepage labels enabled:
 
 ```yaml
 services:
@@ -55,7 +68,7 @@ services:
       - "traefik.http.routers.${SERVICE}.middlewares=secured@file"
       - homepage.group=${GROUP}
       - homepage.name=${SERVICE_NAME}
-      - homepage.icon=password.png
+      - homepage.icon=passwork.png
       - homepage.href=https://${SERVICE}.${DOMAIN}/
       - homepage.description=${DESCRIPTION}
 
