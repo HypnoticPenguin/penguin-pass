@@ -20,7 +20,7 @@ export default function App() {
   const [useSymbols, setUseSymbols] = useState(true)
   const [useNumbers, setUseNumbers] = useState(true)
   const [useUppercase, setUseUppercase] = useState(true)
-  const [excludeAmbiguous, setExcludeAmbiguous] = useState(false)
+  const [excludeAmbiguous, setExcludeAmbiguous] = useState(true)
 
   // Passphrase options
   const [wordCount, setWordCount] = useState(4)

@@ -38,7 +38,7 @@ def generate_chars(
     symbols: bool = True,
     numbers: bool = True,
     uppercase: bool = True,
-    exclude_ambiguous: bool = False,
+    exclude_ambiguous: bool = True,
     count: int = Query(5, ge=1, le=10)
 ):
     chars = string.ascii_lowercase
