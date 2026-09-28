@@ -102,4 +102,10 @@ if os.path.exists(static_dir):
         target = os.path.join(static_dir, full_path)
         if os.path.exists(target) and os.path.isfile(target):
             return FileResponse(target)
-        return FileResponse(os.path.join(static_dir, "index.html"))
+            
+        # Serve index.html with no-cache headers so browsers always fetch the latest version
+        response = FileResponse(os.path.join(static_dir, "index.html"))
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
