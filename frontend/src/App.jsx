@@ -20,7 +20,7 @@ export default function App() {
   const [useSymbols, setUseSymbols] = useState(true)
   const [useNumbers, setUseNumbers] = useState(true)
   const [useUppercase, setUseUppercase] = useState(true)
-  const [excludeAmbiguous, setExcludeAmbiguous] = useState(true) // Enabled by default[cite: 1]
+  const [includeAmbiguous, setIncludeAmbiguous] = useState(true) // Enabled by default[cite: 1]
 
   // Passphrase options
   const [wordCount, setWordCount] = useState(4)
@@ -50,7 +50,7 @@ export default function App() {
   const generatePasswords = async () => {
     try {
       if (mode === 'chars') {
-        const res = await fetch(`/api/generate/chars?length=${length}&symbols=${useSymbols}&numbers=${useNumbers}&uppercase=${useUppercase}&exclude_ambiguous=${excludeAmbiguous}&count=5`)
+        const res = await fetch(`/api/generate/chars?length=${length}&symbols=${useSymbols}&numbers=${useNumbers}&uppercase=${useUppercase}&include_ambiguous=${includeAmbiguous}&count=5`)
         const data = await res.json()
         setPasswords(data.passwords)
       } else {
@@ -78,7 +78,7 @@ export default function App() {
 
   useEffect(() => {
     generatePasswords()
-  }, [mode, length, useSymbols, useNumbers, useUppercase, excludeAmbiguous, wordCount, delimiter, includeNumber, caseStyle, minWordLength, maxWordLength])
+  }, [mode, length, useSymbols, useNumbers, useUppercase, includeAmbiguous, wordCount, delimiter, includeNumber, caseStyle, minWordLength, maxWordLength])
 
   const handleCopySingle = (text, index) => {
     navigator.clipboard.writeText(text)
@@ -113,19 +113,16 @@ export default function App() {
     const hasUpper = /[A-Z]/.test(pwd)
     const hasNum = /[0-9]/.test(pwd)
     const hasSymbol = /[^a-zA-Z0-9]/.test(pwd)
-
     if (hasLower) poolSize += 26
     if (hasUpper) poolSize += 26
     if (hasNum) poolSize += 10
-    if (hasSymbol) poolSize += 32 
+    if (hasSymbol) poolSize += 32
+
     if (poolSize === 0) poolSize = 26
-
     const entropy = Math.round(pwd.length * Math.log2(poolSize))
-
     let label = 'Very Strong'
     let color = '#4CAF50'
     let percentage = 100
-
     if (entropy < 35) {
       label = 'Weak'
       color = '#f44336'
@@ -143,7 +140,6 @@ export default function App() {
       color = '#8bc34a'
       percentage = 90
     }
-
     return { entropy, label, color, percentage }
   }
 
@@ -330,7 +326,13 @@ export default function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" checked={useSymbols} onChange={(e) => setUseSymbols(e.target.checked)} />
-                  Include Symbols (!@#$...)
+                  <span>
+                    Include Symbols (
+                    <span title="!@#$%^&*()_+-=[]{}|;:,.<>?" style={{ textDecoration: 'underline dotted', cursor: 'help' }}>
+                      !@#$...
+                    </span>
+                    )
+                  </span>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" checked={useNumbers} onChange={(e) => setUseNumbers(e.target.checked)} />
@@ -341,8 +343,8 @@ export default function App() {
                   Include Uppercase Letters (A-Z)
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={excludeAmbiguous} onChange={(e) => setExcludeAmbiguous(e.target.checked)} />
-                  Exclude Ambiguous Characters (i, I, l, L, 1, o, O, 0)
+                  <input type="checkbox" checked={includeAmbiguous} onChange={(e) => setIncludeAmbiguous(e.target.checked)} />
+                  Include Ambiguous Characters (i, I, l, L, 1, o, O, 0)
                 </label>
               </div>
             </>
@@ -402,7 +404,6 @@ export default function App() {
                   />
                 </div>
               </div>
-
               {/* Case Style Selector (Modern Segmented Control) */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Case Style</label>
@@ -438,7 +439,6 @@ export default function App() {
                   })}
                 </div>
               </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.25rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" checked={includeNumber} onChange={(e) => setIncludeNumber(e.target.checked)} />
@@ -461,7 +461,15 @@ export default function App() {
                 <button onClick={() => setModalPassword(null)} style={{ background: 'transparent', border: 'none', color: currentTheme.text, fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}>&times;</button>
               </div>
               
-              <div style={{ background: currentTheme.bg, padding: '1.25rem', borderRadius: '6px', border: `1px solid ${currentTheme.border}`, fontFamily: 'monospace', fontSize: '1.6rem', wordBreak: 'break-all', textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div
+                onClick={() => {
+                  navigator.clipboard.writeText(modalPassword)
+                  setCopiedIndex('modal')
+                  setTimeout(() => setCopiedIndex(null), 2000)
+                }}
+                title="Click to copy password"
+                style={{ background: currentTheme.bg, padding: '1.25rem', borderRadius: '6px', border: `1px solid ${currentTheme.border}`, fontFamily: 'monospace', fontSize: '1.6rem', wordBreak: 'break-all', textAlign: 'center', marginBottom: '1.5rem', cursor: 'pointer' }}
+              >
                 {modalPassword}
               </div>
 
@@ -480,11 +488,11 @@ export default function App() {
               
               <div style={{ marginBottom: '1.5rem' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText, display: 'block', marginBottom: '0.5rem' }}>Character Position Index:</span>
-                <div style={{ display: 'flex', overflowX: 'auto', gap: '8px', paddingBottom: '8px' }} className="custom-scrollbar">
+                <div style={{ display: 'flex', overflowX: 'auto', gap: '6px', paddingBottom: '8px' }} className="custom-scrollbar">
                   {modalPassword.split('').map((char, i) => (
-                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '30px', background: currentTheme.bg, border: `1px solid ${currentTheme.border}`, borderRadius: '4px', padding: '6px 0' }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: '1.15rem', fontWeight: 'bold' }}>{char}</span>
-                      <span style={{ fontSize: '0.65rem', color: currentTheme.subText, marginTop: '3px' }}>{i + 1}</span>
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '32px', background: currentTheme.bg, border: `1px solid ${currentTheme.border}`, borderRadius: '4px', padding: '6px 0' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '1.38rem', fontWeight: 'bold', color: /[0-9]/.test(char) ? '#f44336' : currentTheme.text }}>{char}</span>
+                      <span style={{ fontSize: '0.65rem', color: currentTheme.subText, marginTop: '4px' }}>{i + 1}</span>
                     </div>
                   ))}
                 </div>

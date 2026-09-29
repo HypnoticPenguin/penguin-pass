@@ -38,7 +38,7 @@ def generate_chars(
     symbols: bool = True,
     numbers: bool = True,
     uppercase: bool = True,
-    exclude_ambiguous: bool = True,
+    include_ambiguous: bool = True,
     count: int = Query(5, ge=1, le=10)
 ):
     chars = string.ascii_lowercase
@@ -49,7 +49,7 @@ def generate_chars(
     if symbols:
         chars += "!@#$%^&*()_+-=[]{}|;:,.<>?"
         
-    if exclude_ambiguous:
+    if not include_ambiguous:
         ambiguous = "iIlL1oO0"
         chars = "".join(c for c in chars if c not in ambiguous)
         if not chars:
