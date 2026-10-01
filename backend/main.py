@@ -16,9 +16,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load and sanitize all words from words.txt into memory
+# Load and sanitize all words from custom word list or fallback to words.txt
 ALL_WORDS = ["apple", "banana", "galaxy", "penguin", "rocket", "storm", "tiger", "winter"]
-words_path = os.path.join(os.path.dirname(__file__), "words.txt")
+words_path = os.environ.get("CUSTOM_WORD_LIST", os.path.join(os.path.dirname(__file__), "words.txt"))
+
 if os.path.exists(words_path):
     try:
         with open(words_path, "r", encoding="utf-8") as f:
@@ -30,7 +31,7 @@ if os.path.exists(words_path):
             if loaded_words:
                 ALL_WORDS = loaded_words
     except Exception as e:
-        print(f"Error loading words.txt: {e}")
+        print(f"Error loading word list from {words_path}: {e}")
 
 @app.get("/api/generate/chars")
 def generate_chars(

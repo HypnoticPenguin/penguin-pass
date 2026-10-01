@@ -6,3 +6,7 @@ services:
     ports:
       - "8080:8000"
     restart: unless-stopped
+    environment:
+      - CUSTOM_WORD_LIST=/app/custom_words.txt
+    volumes:
+      - ./my-custom-words.txt:/app/custom_words.txt:ro

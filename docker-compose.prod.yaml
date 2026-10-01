@@ -3,11 +3,15 @@ services:
     image: mmozzano/penguin-pass:latest
     restart: unless-stopped
     container_name: ${SERVICE}
+    environment:
+      - CUSTOM_WORD_LIST=/app/custom_words.txt
+    volumes:
+      - ./my-custom-words.txt:/app/custom_words.txt:ro
     networks:
       - traefik_default
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${SERVICE}.entrypoints=web, websecure"
+      - "traefik.http.routers.${SERVICE}.entrypoints=web,websecure"
       - "traefik.http.routers.${SERVICE}.rule=Host(`${SERVICE}.${DOMAIN}`)"
       - "traefik.http.routers.${SERVICE}.tls=true"
       - "traefik.http.routers.${SERVICE}.tls.certresolver=cloudflare"
@@ -24,6 +28,3 @@ services:
 networks:
   traefik_default:
     external: true
-
-
-
