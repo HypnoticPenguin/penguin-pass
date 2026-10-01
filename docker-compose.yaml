@@ -4,3 +4,8 @@ services:
     ports:
       - "8080:8000"
     restart: unless-stopped
+    # uncomment the following lines to enable custom word list support
+    #environment:
+    #  - CUSTOM_WORD_LIST=/app/custom_words.txt
+    #volumes:
+    #  - ./my-custom-words.txt:/app/custom_words.txt:ro
