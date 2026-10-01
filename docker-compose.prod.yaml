@@ -3,10 +3,11 @@ services:
     image: mmozzano/penguin-pass:latest
     restart: unless-stopped
     container_name: ${SERVICE}
-    environment:
-      - CUSTOM_WORD_LIST=/app/custom_words.txt
-    volumes:
-      - ./my-custom-words.txt:/app/custom_words.txt:ro
+    # uncomment the following lines to enable custom word list support
+    #environment:
+    #  - CUSTOM_WORD_LIST=/app/custom_words.txt
+    #volumes:
+    #  - ./my-custom-words.txt:/app/custom_words.txt:ro
     networks:
       - traefik_default
     labels:
