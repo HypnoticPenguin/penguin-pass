@@ -3,7 +3,7 @@ import { themes } from './themes.js'
 import pkg from '../package.json'
 
 export default function App() {
-  const [mode, setMode] = useState('chars') // 'chars' or 'passphrase'
+  const [mode, setMode] = useState('chars') // 'chars', 'passphrase', or 'pin'
   const [themeKey, setThemeKey] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('penguin_pass_theme')
@@ -30,6 +30,9 @@ export default function App() {
   const [minWordLength, setMinWordLength] = useState(3)
   const [maxWordLength, setMaxWordLength] = useState(8)
 
+  // PIN Code options
+  const [pinLength, setPinLength] = useState(4)
+
   // Output list state & copy status map
   const [passwords, setPasswords] = useState([])
   const [copiedIndex, setCopiedIndex] = useState(null)
@@ -53,7 +56,7 @@ export default function App() {
         const res = await fetch(`/api/generate/chars?length=${length}&symbols=${useSymbols}&numbers=${useNumbers}&uppercase=${useUppercase}&include_ambiguous=${includeAmbiguous}&count=5`)
         const data = await res.json()
         setPasswords(data.passwords)
-      } else {
+      } else if (mode === 'passphrase') {
         // Map caseStyle selection to backend query parameters
         const randomCaseParam = caseStyle === 'random' ? 'true' : 'false'
         const res = await fetch(`/api/generate/passphrase?word_count=${wordCount}&delimiter=${encodeURIComponent(delimiter)}&include_number=${includeNumber}&random_case=${randomCaseParam}&min_word_length=${minWordLength}&max_word_length=${maxWordLength}&count=5`)
@@ -70,6 +73,10 @@ export default function App() {
         }
         
         setPasswords(results)
+      } else if (mode === 'pin') {
+        const res = await fetch(`/api/generate/pin?length=${pinLength}&count=5`)
+        const data = await res.json()
+        setPasswords(data.pins)
       }
     } catch (err) {
       console.error('Generation failed', err)
@@ -78,7 +85,7 @@ export default function App() {
 
   useEffect(() => {
     generatePasswords()
-  }, [mode, length, useSymbols, useNumbers, useUppercase, includeAmbiguous, wordCount, delimiter, includeNumber, caseStyle, minWordLength, maxWordLength])
+  }, [mode, length, useSymbols, useNumbers, useUppercase, includeAmbiguous, wordCount, delimiter, includeNumber, caseStyle, minWordLength, maxWordLength, pinLength])
 
   const handleCopySingle = (text, index) => {
     navigator.clipboard.writeText(text)
@@ -113,16 +120,18 @@ export default function App() {
     const hasUpper = /[A-Z]/.test(pwd)
     const hasNum = /[0-9]/.test(pwd)
     const hasSymbol = /[^a-zA-Z0-9]/.test(pwd)
+
     if (hasLower) poolSize += 26
     if (hasUpper) poolSize += 26
     if (hasNum) poolSize += 10
     if (hasSymbol) poolSize += 32
-
     if (poolSize === 0) poolSize = 26
+
     const entropy = Math.round(pwd.length * Math.log2(poolSize))
     let label = 'Very Strong'
     let color = '#4CAF50'
     let percentage = 100
+
     if (entropy < 35) {
       label = 'Weak'
       color = '#f44336'
@@ -140,6 +149,7 @@ export default function App() {
       color = '#8bc34a'
       percentage = 90
     }
+
     return { entropy, label, color, percentage }
   }
 
@@ -215,13 +225,13 @@ export default function App() {
         <div style={{ background: currentTheme.cardBg, borderRadius: '8px', border: `1px solid ${currentTheme.border}`, marginBottom: '1.5rem', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
           <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: currentTheme.bg }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText }}>
-              {mode === 'chars' ? 'Generated Passwords (Click row to inspect)' : 'Generated Passphrases (Click row to inspect)'}
+              {mode === 'chars' ? 'Generated Passwords (Click row to inspect)' : mode === 'passphrase' ? 'Generated Passphrases (Click row to inspect)' : 'Generated PIN Codes (Click row to inspect)'}
             </span>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
                 onClick={handleExportAll}
                 style={{ padding: '0.3rem 0.6rem', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
-                title="Download all passwords as a text file"
+                title="Download all generated items as a text file"
               >
                 Export All
               </button>
@@ -303,6 +313,12 @@ export default function App() {
           >
             Word Passphrase
           </button>
+          <button
+            onClick={() => setMode('pin')}
+            style={{ flex: 1, padding: '0.75rem', background: mode === 'pin' ? currentTheme.cardBg : 'transparent', color: mode === 'pin' ? currentTheme.primary : currentTheme.subText, border: 'none', borderBottom: mode === 'pin' ? `2px solid ${currentTheme.primary}` : 'none', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            PIN Code
+          </button>
         </div>
 
         {/* Controls Card */}
@@ -348,7 +364,7 @@ export default function App() {
                 </label>
               </div>
             </>
-          ) : (
+          ) : mode === 'passphrase' ? (
             <>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
@@ -446,6 +462,23 @@ export default function App() {
                 </label>
               </div>
             </>
+          ) : (
+            <>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                  <span>PIN Length:</span>
+                  <strong>{pinLength} digits</strong>
+                </div>
+                <input
+                  type="range"
+                  min="4"
+                  max="12"
+                  value={pinLength}
+                  onChange={(e) => setPinLength(parseInt(e.target.value, 10))}
+                  style={{ width: '100%', cursor: 'pointer' }}
+                />
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -457,7 +490,7 @@ export default function App() {
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 1000 }}>
             <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: '8px', padding: '2rem', maxWidth: '700px', width: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Password Inspection ({modalPassword.length} characters)</h3>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Inspection ({modalPassword.length} characters/digits)</h3>
                 <button onClick={() => setModalPassword(null)} style={{ background: 'transparent', border: 'none', color: currentTheme.text, fontSize: '1.2rem', cursor: 'pointer', fontWeight: 'bold' }}>&times;</button>
               </div>
               
@@ -467,7 +500,7 @@ export default function App() {
                   setCopiedIndex('modal')
                   setTimeout(() => setCopiedIndex(null), 2000)
                 }}
-                title="Click to copy password"
+                title="Click to copy"
                 style={{ background: currentTheme.bg, padding: '1.25rem', borderRadius: '6px', border: `1px solid ${currentTheme.border}`, fontFamily: 'monospace', fontSize: '1.6rem', wordBreak: 'break-all', textAlign: 'center', marginBottom: '1.5rem', cursor: 'pointer' }}
               >
                 {modalPassword}
@@ -516,7 +549,7 @@ export default function App() {
                     transition: 'background 0.2s ease'
                   }}
                 >
-                  {copiedIndex === 'modal' ? 'Copied' : 'Copy Password'}
+                  {copiedIndex === 'modal' ? 'Copied' : 'Copy'}
                 </button>
                 <button
                   onClick={() => setModalPassword(null)}

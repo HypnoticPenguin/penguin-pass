@@ -93,6 +93,17 @@ def generate_passphrase(
         
     return {"passphrases": passphrases}
 
+@app.get("/api/generate/pin")
+def generate_pin(
+    length: int = Query(4, ge=4, le=12),
+    count: int = Query(5, ge=1, le=10)
+):
+    pins = []
+    for _ in range(count):
+        pin = "".join(secrets.choice(string.digits) for _ in range(length))
+        pins.append(pin)
+    return {"pins": pins}
+
 # Mount static frontend build files if they exist (Docker production mode)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):

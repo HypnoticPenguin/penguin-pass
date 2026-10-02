@@ -93,11 +93,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Docker Image
+      - name: Build and Push multi-arch Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: backend/Dockerfile
+          platforms: linux/amd64,linux/arm64,linux/arm/v7          
           push: true
           tags: |
             mmozzano/penguin-pass:latest
