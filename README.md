@@ -16,7 +16,7 @@ A modern web application for generating secure character passwords and word pass
 * **Custom Word Lists**: Support for mounting and loading a custom dictionary file via a Docker volume and environment variable.
 * **Password Inspection Modal**: Click on any generated password row to open an inspection window that displays the full text along with precise character position indices underneath.
 * **Theme Support**: Toggle seamlessly between Light Mode and Dark Mode, with automatic fallback to your system preferences.
-
+* **Multi-architecture** : supports `linux/amd64`, `linux/arm64` and `linux/arm/v7` so it runs natively on standard PCs and Raspberry Pi home servers.
 ## Tech Stack
 
 * **Frontend**: React 18, Vite
