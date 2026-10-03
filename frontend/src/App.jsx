@@ -3,7 +3,8 @@ import { themes } from './themes.js'
 import pkg from '../package.json'
 
 export default function App() {
-  const [mode, setMode] = useState('chars') // 'chars', 'passphrase', or 'pin'
+  const [mode, setMode] = useState('chars') // 'chars', 'passphrase', or 'pin'[cite: 1]
+  const [charSubType, setCharSubType] = useState('random') // 'random' or 'pronounceable'
   const [themeKey, setThemeKey] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('penguin_pass_theme')
@@ -15,29 +16,32 @@ export default function App() {
     return 'light'
   })
 
-  // Character options
+  // Character options[cite: 1]
   const [length, setLength] = useState(16)
   const [useSymbols, setUseSymbols] = useState(true)
   const [useNumbers, setUseNumbers] = useState(true)
   const [useUppercase, setUseUppercase] = useState(true)
   const [includeAmbiguous, setIncludeAmbiguous] = useState(true) // Enabled by default[cite: 1]
 
-  // Passphrase options
+  // Pronounceable password case style state
+  const [pronounceableCaseStyle, setPronounceableCaseStyle] = useState('title') // 'lower', 'title', 'upper', 'random'
+
+  // Passphrase options[cite: 1]
   const [wordCount, setWordCount] = useState(4)
   const [delimiter, setDelimiter] = useState('-')
   const [includeNumber, setIncludeNumber] = useState(false)
-  const [caseStyle, setCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'
+  const [caseStyle, setCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'[cite: 1]
   const [minWordLength, setMinWordLength] = useState(3)
   const [maxWordLength, setMaxWordLength] = useState(8)
 
-  // PIN Code options
+  // PIN Code options[cite: 1]
   const [pinLength, setPinLength] = useState(4)
 
-  // Output list state & copy status map
+  // Output list state & copy status map[cite: 1]
   const [passwords, setPasswords] = useState([])
   const [copiedIndex, setCopiedIndex] = useState(null)
 
-  // Modal state for viewing password with character numbers
+  // Modal state for viewing password with character numbers[cite: 1]
   const [modalPassword, setModalPassword] = useState(null)
 
   const currentTheme = themes[themeKey] || themes.light
@@ -53,17 +57,21 @@ export default function App() {
   const generatePasswords = async () => {
     try {
       if (mode === 'chars') {
-        const res = await fetch(`/api/generate/chars?length=${length}&symbols=${useSymbols}&numbers=${useNumbers}&uppercase=${useUppercase}&include_ambiguous=${includeAmbiguous}&count=5`)
-        const data = await res.json()
-        setPasswords(data.passwords)
+        if (charSubType === 'pronounceable') {
+          const res = await fetch(`/api/generate/pronounceable?length=${length}&case_style=${pronounceableCaseStyle}&include_number=${useNumbers}&count=5`)
+          const data = await res.json()
+          setPasswords(data.passwords)
+        } else {
+          const res = await fetch(`/api/generate/chars?length=${length}&symbols=${useSymbols}&numbers=${useNumbers}&uppercase=${useUppercase}&include_ambiguous=${includeAmbiguous}&count=5`)
+          const data = await res.json()
+          setPasswords(data.passwords)
+        }
       } else if (mode === 'passphrase') {
-        // Map caseStyle selection to backend query parameters
         const randomCaseParam = caseStyle === 'random' ? 'true' : 'false'
         const res = await fetch(`/api/generate/passphrase?word_count=${wordCount}&delimiter=${encodeURIComponent(delimiter)}&include_number=${includeNumber}&random_case=${randomCaseParam}&min_word_length=${minWordLength}&max_word_length=${maxWordLength}&count=5`)
         const data = await res.json()
         
         let results = data.passphrases
-        // Apply frontend post-formatting for Title Case or ALL CAPS if needed
         if (caseStyle === 'title') {
           results = results.map(phrase => 
             phrase.split(delimiter).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(delimiter)
@@ -85,7 +93,7 @@ export default function App() {
 
   useEffect(() => {
     generatePasswords()
-  }, [mode, length, useSymbols, useNumbers, useUppercase, includeAmbiguous, wordCount, delimiter, includeNumber, caseStyle, minWordLength, maxWordLength, pinLength])
+  }, [mode, charSubType, length, useSymbols, useNumbers, useUppercase, includeAmbiguous, pronounceableCaseStyle, wordCount, delimiter, includeNumber, caseStyle, minWordLength, maxWordLength, pinLength])
 
   const handleCopySingle = (text, index) => {
     navigator.clipboard.writeText(text)
@@ -100,7 +108,7 @@ export default function App() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `penguin-pass-${mode}-${new Date().toISOString().slice(0, 10)}.txt`
+    link.download = `penguin-pass-${mode}-${charSubType}-${new Date().toISOString().slice(0, 10)}.txt`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -111,7 +119,6 @@ export default function App() {
     setThemeKey((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
 
-  // Calculate approximate entropy and strength details for the modal
   const getPasswordAnalysis = (pwd) => {
     if (!pwd) return { entropy: 0, label: 'Unknown', color: '#ccc', percentage: 0 }
     
@@ -120,7 +127,6 @@ export default function App() {
     const hasUpper = /[A-Z]/.test(pwd)
     const hasNum = /[0-9]/.test(pwd)
     const hasSymbol = /[^a-zA-Z0-9]/.test(pwd)
-
     if (hasLower) poolSize += 26
     if (hasUpper) poolSize += 26
     if (hasNum) poolSize += 10
@@ -149,7 +155,6 @@ export default function App() {
       color = '#8bc34a'
       percentage = 90
     }
-
     return { entropy, label, color, percentage }
   }
 
@@ -225,7 +230,7 @@ export default function App() {
         <div style={{ background: currentTheme.cardBg, borderRadius: '8px', border: `1px solid ${currentTheme.border}`, marginBottom: '1.5rem', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
           <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: currentTheme.bg }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText }}>
-              {mode === 'chars' ? 'Generated Passwords (Click row to inspect)' : mode === 'passphrase' ? 'Generated Passphrases (Click row to inspect)' : 'Generated PIN Codes (Click row to inspect)'}
+              {mode === 'chars' ? (charSubType === 'pronounceable' ? 'Generated Pronounceable Passwords (Click to inspect)' : 'Generated Passwords (Click row to inspect)') : mode === 'passphrase' ? 'Generated Passphrases (Click row to inspect)' : 'Generated PIN Codes (Click row to inspect)'}
             </span>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
@@ -325,44 +330,141 @@ export default function App() {
         <div style={{ background: currentTheme.cardBg, padding: '1.5rem', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, display: 'flex', flexDirection: 'column', gap: '1.25rem', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
           {mode === 'chars' ? (
             <>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                  <span>Password Length:</span>
-                  <strong>{length}</strong>
-                </div>
-                <input
-                  type="range"
-                  min="6"
-                  max="64"
-                  value={length}
-                  onChange={(e) => setLength(parseInt(e.target.value, 10))}
-                  style={{ width: '100%', cursor: 'pointer' }}
-                />
+              {/* Sub-form style switcher */}
+              <div style={{ display: 'flex', background: currentTheme.bg, padding: '3px', borderRadius: '6px', border: `1px solid ${currentTheme.border}` }}>
+                <button
+                  onClick={() => setCharSubType('random')}
+                  style={{
+                    flex: 1,
+                    padding: '0.4rem',
+                    background: charSubType === 'random' ? currentTheme.cardBg : 'transparent',
+                    color: charSubType === 'random' ? currentTheme.primary : currentTheme.subText,
+                    border: charSubType === 'random' ? `1px solid ${currentTheme.border}` : '1px solid transparent',
+                    borderRadius: '4px',
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Random Characters
+                </button>
+                <button
+                  onClick={() => setCharSubType('pronounceable')}
+                  style={{
+                    flex: 1,
+                    padding: '0.4rem',
+                    background: charSubType === 'pronounceable' ? currentTheme.cardBg : 'transparent',
+                    color: charSubType === 'pronounceable' ? currentTheme.primary : currentTheme.subText,
+                    border: charSubType === 'pronounceable' ? `1px solid ${currentTheme.border}` : '1px solid transparent',
+                    borderRadius: '4px',
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Pronounceable
+                </button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={useSymbols} onChange={(e) => setUseSymbols(e.target.checked)} />
-                  <span>
-                    Include Symbols (
-                    <span title="!@#$%^&*()_+-=[]{}|;:,.<>?" style={{ textDecoration: 'underline dotted', cursor: 'help' }}>
-                      !@#$...
-                    </span>
-                    )
-                  </span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={useNumbers} onChange={(e) => setUseNumbers(e.target.checked)} />
-                  Include Numbers (0-9)
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={useUppercase} onChange={(e) => setUseUppercase(e.target.checked)} />
-                  Include Uppercase Letters (A-Z)
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={includeAmbiguous} onChange={(e) => setIncludeAmbiguous(e.target.checked)} />
-                  Include Ambiguous Characters (i, I, l, L, 1, o, O, 0)
-                </label>
-              </div>
+
+              {charSubType === 'random' ? (
+                <>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                      <span>Password Length:</span>
+                      <strong>{length}</strong>
+                    </div>
+                    <input
+                      type="range"
+                      min="6"
+                      max="64"
+                      value={length}
+                      onChange={(e) => setLength(parseInt(e.target.value, 10))}
+                      style={{ width: '100%', cursor: 'pointer' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                      <input type="checkbox" checked={useSymbols} onChange={(e) => setUseSymbols(e.target.checked)} />
+                      <span>
+                        Include Symbols (
+                        <span title="!@#$%^&*()_+-=[]{}|;:,.<>?" style={{ textDecoration: 'underline dotted', cursor: 'help' }}>
+                          !@#$...
+                        </span>
+                        )
+                      </span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                      <input type="checkbox" checked={useNumbers} onChange={(e) => setUseNumbers(e.target.checked)} />
+                      Include Numbers (0-9)
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                      <input type="checkbox" checked={useUppercase} onChange={(e) => setUseUppercase(e.target.checked)} />
+                      Include Uppercase Letters (A-Z)
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                      <input type="checkbox" checked={includeAmbiguous} onChange={(e) => setIncludeAmbiguous(e.target.checked)} />
+                      Include Ambiguous Characters (i, I, l, L, 1, o, O, 0)
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                      <span>Base Length:</span>
+                      <strong>{length}</strong>
+                    </div>
+                    <input
+                      type="range"
+                      min="4"
+                      max="20"
+                      value={length}
+                      onChange={(e) => setLength(parseInt(e.target.value, 10))}
+                      style={{ width: '100%', cursor: 'pointer' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Case Style</label>
+                    <div style={{ display: 'flex', background: currentTheme.bg, padding: '3px', borderRadius: '6px', border: `1px solid ${currentTheme.border}` }}>
+                      {[
+                        { id: 'lower', label: 'lower' },
+                        { id: 'title', label: 'Title Case' },
+                        { id: 'upper', label: 'UPPER' },
+                        { id: 'random', label: 'Random' }
+                      ].map((style) => {
+                        const isActive = pronounceableCaseStyle === style.id
+                        return (
+                          <button
+                            key={style.id}
+                            onClick={() => setPronounceableCaseStyle(style.id)}
+                            style={{
+                              flex: 1,
+                              padding: '0.4rem 0.2rem',
+                              background: isActive ? currentTheme.cardBg : 'transparent',
+                              color: isActive ? currentTheme.primary : currentTheme.subText,
+                              border: isActive ? `1px solid ${currentTheme.border}` : '1px solid transparent',
+                              borderRadius: '4px',
+                              fontSize: '0.8rem',
+                              fontWeight: isActive ? 'bold' : 'normal',
+                              cursor: 'pointer',
+                              boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            {style.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.25rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                      <input type="checkbox" checked={useNumbers} onChange={(e) => setUseNumbers(e.target.checked)} />
+                      Add random numbers (2 digits)
+                    </label>
+                  </div>
+                </>
+              )}
             </>
           ) : mode === 'passphrase' ? (
             <>
@@ -420,7 +522,6 @@ export default function App() {
                   />
                 </div>
               </div>
-              {/* Case Style Selector (Modern Segmented Control) */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Case Style</label>
                 <div style={{ display: 'flex', background: currentTheme.bg, padding: '3px', borderRadius: '6px', border: `1px solid ${currentTheme.border}` }}>
@@ -458,7 +559,7 @@ export default function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.25rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" checked={includeNumber} onChange={(e) => setIncludeNumber(e.target.checked)} />
-                  Include Random Numbers in Words
+                  Add random numbers (2 digits)
                 </label>
               </div>
             </>
@@ -518,7 +619,7 @@ export default function App() {
                   <div style={{ width: `${analysis.percentage}%`, height: '100%', background: analysis.color, transition: 'width 0.3s ease' }}></div>
                 </div>
               </div>
-              
+
               <div style={{ marginBottom: '1.5rem' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: currentTheme.subText, display: 'block', marginBottom: '0.5rem' }}>Character Position Index:</span>
                 <div style={{ display: 'flex', overflowX: 'auto', gap: '6px', paddingBottom: '8px' }} className="custom-scrollbar">

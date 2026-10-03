@@ -16,10 +16,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load and sanitize all words from custom word list or fallback to words.txt
+# Load and sanitize all words from custom word list or fallback to words.txt[cite: 1]
 ALL_WORDS = ["apple", "banana", "galaxy", "penguin", "rocket", "storm", "tiger", "winter"]
 words_path = os.environ.get("CUSTOM_WORD_LIST", os.path.join(os.path.dirname(__file__), "words.txt"))
-
 if os.path.exists(words_path):
     try:
         with open(words_path, "r", encoding="utf-8") as f:
@@ -60,6 +59,53 @@ def generate_chars(
     for _ in range(count):
         password = "".join(secrets.choice(chars) for _ in range(length))
         passwords.append(password)
+        
+    return {"passwords": passwords}
+
+@app.get("/api/generate/pronounceable")
+def generate_pronounceable(
+    length: int = Query(8, ge=4, le=20),
+    case_style: str = Query("title"),  # 'lower', 'title', 'upper', 'random'
+    include_number: bool = True,
+    count: int = Query(5, ge=1, le=10)
+):
+    consonants = "bcdfghjklmnpqrstvwxyz"
+    vowels = "aeiou"
+    
+    passwords = []
+    for _ in range(count):
+        pwd_chars = []
+        for i in range(length):
+            if i % 2 == 0:
+                pwd_chars.append(secrets.choice(consonants))
+            else:
+                pwd_chars.append(secrets.choice(vowels))
+        
+        # Insert 2 random digits anywhere into the character list if enabled
+        if include_number:
+            num_str = str(secrets.randbelow(90) + 10) # 2 digits (10-99)
+            for digit in num_str:
+                insert_idx = secrets.randbelow(len(pwd_chars) + 1)
+                pwd_chars.insert(insert_idx, digit)
+
+        pwd = "".join(pwd_chars)
+        
+        if case_style == "title":
+            # Capitalize first alphabetical letter if title case is selected
+            chars_list = list(pwd)
+            for idx, c in enumerate(chars_list):
+                if c.isalpha():
+                    chars_list[idx] = c.upper()
+                    break
+            pwd = "".join(chars_list)
+        elif case_style == "upper":
+            pwd = pwd.upper()
+        elif case_style == "random":
+            pwd = "".join(c.upper() if c.isalpha() and secrets.choice([True, False]) else c.lower() if c.isalpha() else c for c in pwd)
+        else:
+            pwd = pwd.lower()
+            
+        passwords.append(pwd)
         
     return {"passwords": passwords}
 
@@ -104,7 +150,7 @@ def generate_pin(
         pins.append(pin)
     return {"pins": pins}
 
-# Mount static frontend build files if they exist (Docker production mode)
+# Mount static frontend build files if they exist (Docker production mode)[cite: 1]
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
