@@ -23,8 +23,8 @@ export default function App() {
   const [useUppercase, setUseUppercase] = useState(true)
   const [includeAmbiguous, setIncludeAmbiguous] = useState(true) // Enabled by default[cite: 1]
 
-  // Pronounceable password case style state
-  const [pronounceableCaseStyle, setPronounceableCaseStyle] = useState('title') // 'lower', 'title', 'upper', 'random'
+  // Pronounceable password case style state (default changed to 'lower')
+  const [pronounceableCaseStyle, setPronounceableCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'
 
   // Passphrase options[cite: 1]
   const [wordCount, setWordCount] = useState(4)

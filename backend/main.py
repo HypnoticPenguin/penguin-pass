@@ -65,7 +65,7 @@ def generate_chars(
 @app.get("/api/generate/pronounceable")
 def generate_pronounceable(
     length: int = Query(8, ge=4, le=20),
-    case_style: str = Query("title"),  # 'lower', 'title', 'upper', 'random'
+    case_style: str = Query("lower"),  # Changed default to "lower"
     include_number: bool = True,
     count: int = Query(5, ge=1, le=10)
 ):
@@ -81,9 +81,8 @@ def generate_pronounceable(
             else:
                 pwd_chars.append(secrets.choice(vowels))
         
-        # Insert 2 random digits anywhere into the character list if enabled
         if include_number:
-            num_str = str(secrets.randbelow(90) + 10) # 2 digits (10-99)
+            num_str = str(secrets.randbelow(90) + 10)
             for digit in num_str:
                 insert_idx = secrets.randbelow(len(pwd_chars) + 1)
                 pwd_chars.insert(insert_idx, digit)
@@ -91,7 +90,6 @@ def generate_pronounceable(
         pwd = "".join(pwd_chars)
         
         if case_style == "title":
-            # Capitalize first alphabetical letter if title case is selected
             chars_list = list(pwd)
             for idx, c in enumerate(chars_list):
                 if c.isalpha():
