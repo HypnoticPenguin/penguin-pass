@@ -11,7 +11,7 @@ A modern web application for generating secure character passwords and word pass
 ## Features
 
 * **Cryptographically Secure**: Utilizes Python's secure `secrets` module for high-entropy random generation.
-* **Character Passwords**: Generate custom-length passwords (6 to 64 characters) with options to include symbols, numbers, uppercase letters, and a filter to **exclude ambiguous characters** (such as `i`, `I`, `l`, `L`, `1`, `o`, `O`, `0`)[.
+* **Character Passwords**: Generate custom-length passwords (6 to 64 characters) with options to include symbols, numbers, uppercase letters, and a filter to **exclude ambiguous characters** (such as `i`, `I`, `l`, `L`, `1`, `o`, `O`, `0`).
 * **Pronounceable Passwords**: Generate syllable-based, memorable character passwords using alternating consonant and vowel patterns, with optional capitalization and appended numbers.
 * **Word Passphrases**: Generate secure, dictionary-based passphrases from a curated list of 3,000 common English words, featuring adjustable word counts, length filters, custom delimiters, and optional random numbers.
 * **PIN Codes**: Generate secure numerical PIN codes of adjustable lengths (4 to 12 digits) for quick authentication needs.
