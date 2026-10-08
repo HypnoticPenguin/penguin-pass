@@ -11,13 +11,15 @@ A modern web application for generating secure character passwords and word pass
 ## Features
 
 * **Cryptographically Secure**: Utilizes Python's secure `secrets` module for high-entropy random generation.
-* **Character Passwords**: Generate custom-length passwords (6 to 64 characters) with options to include symbols, numbers, uppercase letters, and a filter to **exclude ambiguous characters** (such as `i`, `I`, `l`, `L`, `1`, `o`, `O`, `0`).
+* **Character Passwords**: Generate custom-length passwords (6 to 64 characters) with options to include symbols, numbers, uppercase letters, and a filter to **exclude ambiguous characters** (such as `i`, `I`, `l`, `L`, `1`, `o`, `O`, `0`)[.
 * **Pronounceable Passwords**: Generate syllable-based, memorable character passwords using alternating consonant and vowel patterns, with optional capitalization and appended numbers.
 * **Word Passphrases**: Generate secure, dictionary-based passphrases from a curated list of 3,000 common English words, featuring adjustable word counts, length filters, custom delimiters, and optional random numbers.
 * **PIN Codes**: Generate secure numerical PIN codes of adjustable lengths (4 to 12 digits) for quick authentication needs.
 * **Custom Word Lists**: Support for mounting and loading a custom dictionary file via a Docker volume and environment variable.
 * **Password Inspection Modal**: Click on any generated password row to open an inspection window that displays the full text along with precise character position indices underneath.
 * **Theme Support**: Toggle seamlessly between Light Mode and Dark Mode, with automatic fallback to your system preferences.
+
+---
 
 ## Tech Stack
 
@@ -41,6 +43,7 @@ docker run -d \
 ```
 
 ### Docker Compose
+
 To run a standalone container using Docker Compose and mapping port `8080` to the internal port `8000`:
 
 ```yaml
@@ -71,7 +74,7 @@ services:
       - ./my-custom-words.txt:/app/custom_words.txt:ro  #optional if you want to use a custom word list
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${SERVICE}.entrypoints=web, websecure"
+      - "traefik.http.routers.${SERVICE}.entrypoints=web,websecure"
       - "traefik.http.routers.${SERVICE}.rule=Host(`${SERVICE}.${DOMAIN}`)"
       - "traefik.http.routers.${SERVICE}.tls=true"
       - "traefik.http.routers.${SERVICE}.tls.certresolver=cloudflare"
@@ -102,4 +105,34 @@ SERVICE_NAME=Penguin Pass
 GROUP=Applications
 DESCRIPTION=Password Generator
 
+```
+## Command-Line / API Usage
+
+Penguin Pass includes a raw text API endpoint (`/api/generate`) designed for CLI usage with `curl` to fetch single passwords instantly in terminal scripts or shell configurations.
+
+### Examples
+
+**Default (Standard Character Password):**
+```bash
+curl -s https://password.yourdomain.com/api/generate]
+```
+
+**Pronounceable Password (Title Case with Numbers):**
+```bash
+curl -s https://password.yourdomain.com/api/generate?type=pronounceable&length=10&case_style=title&include_number=true
+```
+
+**Word Passphrase (3 words, custom delimiter):**
+```bash
+curl -s https://password.yourdomain.com/api/generate?type=passphrase&word_count=3&delimiter=_&include_number=true
+```
+
+**PIN Code (6 digits):**
+```bash
+curl -s https://password.yourdomain.com/api/generate?type=pin&length=6
+```
+
+**Copy directly to clipboard (macOS):**
+```bash
+curl -s https://password.yourdomain.com/api/generate | pbcopy
 ```

@@ -3,7 +3,7 @@ import { themes } from './themes.js'
 import pkg from '../package.json'
 
 export default function App() {
-  const [mode, setMode] = useState('chars') // 'chars', 'passphrase', or 'pin'[cite: 1]
+  const [mode, setMode] = useState('chars') // 'chars', 'passphrase', or 'pin'
   const [charSubType, setCharSubType] = useState('random') // 'random' or 'pronounceable'
   const [themeKey, setThemeKey] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -16,32 +16,32 @@ export default function App() {
     return 'light'
   })
 
-  // Character options[cite: 1]
+  // Character options
   const [length, setLength] = useState(16)
   const [useSymbols, setUseSymbols] = useState(true)
   const [useNumbers, setUseNumbers] = useState(true)
   const [useUppercase, setUseUppercase] = useState(true)
-  const [includeAmbiguous, setIncludeAmbiguous] = useState(true) // Enabled by default[cite: 1]
+  const [includeAmbiguous, setIncludeAmbiguous] = useState(true) // Enabled by default
 
-  // Pronounceable password case style state
-  const [pronounceableCaseStyle, setPronounceableCaseStyle] = useState('title') // 'lower', 'title', 'upper', 'random'
+  // Pronounceable password case style state (default changed to 'lower')
+  const [pronounceableCaseStyle, setPronounceableCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'
 
-  // Passphrase options[cite: 1]
+  // Passphrase options
   const [wordCount, setWordCount] = useState(4)
   const [delimiter, setDelimiter] = useState('-')
   const [includeNumber, setIncludeNumber] = useState(false)
-  const [caseStyle, setCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'[cite: 1]
+  const [caseStyle, setCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'
   const [minWordLength, setMinWordLength] = useState(3)
   const [maxWordLength, setMaxWordLength] = useState(8)
 
-  // PIN Code options[cite: 1]
+  // PIN Code options
   const [pinLength, setPinLength] = useState(4)
 
-  // Output list state & copy status map[cite: 1]
+  // Output list state & copy status map
   const [passwords, setPasswords] = useState([])
   const [copiedIndex, setCopiedIndex] = useState(null)
 
-  // Modal state for viewing password with character numbers[cite: 1]
+  // Modal state for viewing password with character numbers
   const [modalPassword, setModalPassword] = useState(null)
 
   const currentTheme = themes[themeKey] || themes.light
@@ -54,7 +54,57 @@ export default function App() {
     localStorage.setItem('penguin_pass_theme', themeKey)
   }, [themeKey, currentTheme])
 
-  const generatePasswords = async () => {
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const generatePasswords = async () => {
+      try {
+        if (mode === 'chars') {
+          if (charSubType === 'pronounceable') {
+            const res = await fetch(`/api/generate/pronounceable?length=${length}&case_style=${pronounceableCaseStyle}&include_number=${useNumbers}&count=5`, { signal: controller.signal })
+            const data = await res.json()
+            setPasswords(data.passwords)
+          } else {
+            const res = await fetch(`/api/generate/chars?length=${length}&symbols=${useSymbols}&numbers=${useNumbers}&uppercase=${useUppercase}&include_ambiguous=${includeAmbiguous}&count=5`, { signal: controller.signal })
+            const data = await res.json()
+            setPasswords(data.passwords)
+          }
+        } else if (mode === 'passphrase') {
+          const randomCaseParam = caseStyle === 'random' ? 'true' : 'false'
+          const res = await fetch(`/api/generate/passphrase?word_count=${wordCount}&delimiter=${encodeURIComponent(delimiter)}&include_number=${includeNumber}&random_case=${randomCaseParam}&min_word_length=${minWordLength}&max_word_length=${maxWordLength}&count=5`, { signal: controller.signal })
+          const data = await res.json()
+                 
+          let results = data.passphrases
+          if (caseStyle === 'title') {
+            results = results.map(phrase => 
+              phrase.split(delimiter).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(delimiter)
+            )
+          } else if (caseStyle === 'upper') {
+            results = results.map(phrase => phrase.toUpperCase())
+          }
+                 
+          setPasswords(results)
+        } else if (mode === 'pin') {
+          const res = await fetch(`/api/generate/pin?length=${pinLength}&count=5`, { signal: controller.signal })
+          const data = await res.json()
+          setPasswords(data.pins)
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Generation failed', err)
+        }
+      }
+    }
+
+    generatePasswords()
+
+    return () => {
+      controller.abort()
+    }
+  }, [mode, charSubType, length, useSymbols, useNumbers, useUppercase, includeAmbiguous, pronounceableCaseStyle, wordCount, delimiter, includeNumber, caseStyle, minWordLength, maxWordLength, pinLength])
+
+  // Manual trigger wrapper for Refresh All button
+  const handleRefreshAll = async () => {
     try {
       if (mode === 'chars') {
         if (charSubType === 'pronounceable') {
@@ -70,7 +120,7 @@ export default function App() {
         const randomCaseParam = caseStyle === 'random' ? 'true' : 'false'
         const res = await fetch(`/api/generate/passphrase?word_count=${wordCount}&delimiter=${encodeURIComponent(delimiter)}&include_number=${includeNumber}&random_case=${randomCaseParam}&min_word_length=${minWordLength}&max_word_length=${maxWordLength}&count=5`)
         const data = await res.json()
-        
+                 
         let results = data.passphrases
         if (caseStyle === 'title') {
           results = results.map(phrase => 
@@ -79,7 +129,7 @@ export default function App() {
         } else if (caseStyle === 'upper') {
           results = results.map(phrase => phrase.toUpperCase())
         }
-        
+                 
         setPasswords(results)
       } else if (mode === 'pin') {
         const res = await fetch(`/api/generate/pin?length=${pinLength}&count=5`)
@@ -90,10 +140,6 @@ export default function App() {
       console.error('Generation failed', err)
     }
   }
-
-  useEffect(() => {
-    generatePasswords()
-  }, [mode, charSubType, length, useSymbols, useNumbers, useUppercase, includeAmbiguous, pronounceableCaseStyle, wordCount, delimiter, includeNumber, caseStyle, minWordLength, maxWordLength, pinLength])
 
   const handleCopySingle = (text, index) => {
     navigator.clipboard.writeText(text)
@@ -121,7 +167,7 @@ export default function App() {
 
   const getPasswordAnalysis = (pwd) => {
     if (!pwd) return { entropy: 0, label: 'Unknown', color: '#ccc', percentage: 0 }
-    
+     
     let poolSize = 0
     const hasLower = /[a-z]/.test(pwd)
     const hasUpper = /[A-Z]/.test(pwd)
@@ -241,13 +287,14 @@ export default function App() {
                 Export All
               </button>
               <button
-                onClick={generatePasswords}
+                onClick={handleRefreshAll}
                 style={{ padding: '0.3rem 0.6rem', background: currentTheme.primary, color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
               >
                 Refresh All
               </button>
             </div>
           </div>
+
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {passwords.map((pwd, idx) => {
               const rowBg = idx % 2 === 0 ? currentTheme.cardBg : currentTheme.bg
@@ -382,6 +429,7 @@ export default function App() {
                       style={{ width: '100%', cursor: 'pointer' }}
                     />
                   </div>
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                       <input type="checkbox" checked={useSymbols} onChange={(e) => setUseSymbols(e.target.checked)} />
@@ -423,6 +471,7 @@ export default function App() {
                       style={{ width: '100%', cursor: 'pointer' }}
                     />
                   </div>
+
                   <div>
                     <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Case Style</label>
                     <div style={{ display: 'flex', background: currentTheme.bg, padding: '3px', borderRadius: '6px', border: `1px solid ${currentTheme.border}` }}>
@@ -457,6 +506,7 @@ export default function App() {
                       })}
                     </div>
                   </div>
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.25rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                       <input type="checkbox" checked={useNumbers} onChange={(e) => setUseNumbers(e.target.checked)} />
@@ -482,6 +532,7 @@ export default function App() {
                   style={{ width: '100%', cursor: 'pointer' }}
                 />
               </div>
+
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
                   <span>Min Word Length:</span>
@@ -496,6 +547,7 @@ export default function App() {
                   style={{ width: '100%', cursor: 'pointer' }}
                 />
               </div>
+
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
                   <span>Max Word Length:</span>
@@ -510,6 +562,7 @@ export default function App() {
                   style={{ width: '100%', cursor: 'pointer' }}
                 />
               </div>
+
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Delimiter</label>
@@ -522,6 +575,7 @@ export default function App() {
                   />
                 </div>
               </div>
+
               <div>
                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Case Style</label>
                 <div style={{ display: 'flex', background: currentTheme.bg, padding: '3px', borderRadius: '6px', border: `1px solid ${currentTheme.border}` }}>
@@ -556,6 +610,7 @@ export default function App() {
                   })}
                 </div>
               </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.25rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                   <input type="checkbox" checked={includeNumber} onChange={(e) => setIncludeNumber(e.target.checked)} />
