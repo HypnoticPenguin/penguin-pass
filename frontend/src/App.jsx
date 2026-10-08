@@ -3,7 +3,7 @@ import { themes } from './themes.js'
 import pkg from '../package.json'
 
 export default function App() {
-  const [mode, setMode] = useState('chars') // 'chars', 'passphrase', or 'pin'[cite: 1]
+  const [mode, setMode] = useState('chars') // 'chars', 'passphrase', or 'pin'
   const [charSubType, setCharSubType] = useState('random') // 'random' or 'pronounceable'
   const [themeKey, setThemeKey] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -16,32 +16,32 @@ export default function App() {
     return 'light'
   })
 
-  // Character options[cite: 1]
+  // Character options
   const [length, setLength] = useState(16)
   const [useSymbols, setUseSymbols] = useState(true)
   const [useNumbers, setUseNumbers] = useState(true)
   const [useUppercase, setUseUppercase] = useState(true)
-  const [includeAmbiguous, setIncludeAmbiguous] = useState(true) // Enabled by default[cite: 1]
+  const [includeAmbiguous, setIncludeAmbiguous] = useState(true) // Enabled by default
 
   // Pronounceable password case style state (default changed to 'lower')
   const [pronounceableCaseStyle, setPronounceableCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'
 
-  // Passphrase options[cite: 1]
+  // Passphrase options
   const [wordCount, setWordCount] = useState(4)
   const [delimiter, setDelimiter] = useState('-')
   const [includeNumber, setIncludeNumber] = useState(false)
-  const [caseStyle, setCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'[cite: 1]
+  const [caseStyle, setCaseStyle] = useState('lower') // 'lower', 'title', 'upper', 'random'
   const [minWordLength, setMinWordLength] = useState(3)
   const [maxWordLength, setMaxWordLength] = useState(8)
 
-  // PIN Code options[cite: 1]
+  // PIN Code options
   const [pinLength, setPinLength] = useState(4)
 
-  // Output list state & copy status map[cite: 1]
+  // Output list state & copy status map
   const [passwords, setPasswords] = useState([])
   const [copiedIndex, setCopiedIndex] = useState(null)
 
-  // Modal state for viewing password with character numbers[cite: 1]
+  // Modal state for viewing password with character numbers
   const [modalPassword, setModalPassword] = useState(null)
 
   const currentTheme = themes[themeKey] || themes.light

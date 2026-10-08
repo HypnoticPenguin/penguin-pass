@@ -4,7 +4,7 @@ import string
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 
 app = FastAPI(title="Penguin Pass API", version="1.0.0")
 
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load and sanitize all words from custom word list or fallback to words.txt[cite: 1]
+# Load and sanitize all words from custom word list or fallback to words.txt
 ALL_WORDS = ["apple", "banana", "galaxy", "penguin", "rocket", "storm", "tiger", "winter"]
 words_path = os.environ.get("CUSTOM_WORD_LIST", os.path.join(os.path.dirname(__file__), "words.txt"))
 if os.path.exists(words_path):
@@ -65,7 +65,7 @@ def generate_chars(
 @app.get("/api/generate/pronounceable")
 def generate_pronounceable(
     length: int = Query(8, ge=4, le=20),
-    case_style: str = Query("lower"),  # Changed default to "lower"
+    case_style: str = Query("lower"),
     include_number: bool = True,
     count: int = Query(5, ge=1, le=10)
 ):
@@ -80,13 +80,13 @@ def generate_pronounceable(
                 pwd_chars.append(secrets.choice(consonants))
             else:
                 pwd_chars.append(secrets.choice(vowels))
-        
+                
         if include_number:
             num_str = str(secrets.randbelow(90) + 10)
             for digit in num_str:
                 insert_idx = secrets.randbelow(len(pwd_chars) + 1)
                 pwd_chars.insert(insert_idx, digit)
-
+                
         pwd = "".join(pwd_chars)
         
         if case_style == "title":
@@ -102,7 +102,7 @@ def generate_pronounceable(
             pwd = "".join(c.upper() if c.isalpha() and secrets.choice([True, False]) else c.lower() if c.isalpha() else c for c in pwd)
         else:
             pwd = pwd.lower()
-            
+                
         passwords.append(pwd)
         
     return {"passwords": passwords}
@@ -148,7 +148,49 @@ def generate_pin(
         pins.append(pin)
     return {"pins": pins}
 
-# Mount static frontend build files if they exist (Docker production mode)[cite: 1]
+@app.get("/api/generate", response_class=PlainTextResponse)
+def generate_cli(
+    type: str = Query("chars", description="Type: chars, pronounceable, passphrase, pin"),
+    length: int = Query(16, ge=4, le=128),
+    symbols: bool = True,
+    numbers: bool = True,
+    uppercase: bool = True,
+    include_ambiguous: bool = True,
+    case_style: str = Query("lower"),
+    include_number: bool = False,
+    word_count: int = Query(4, ge=2, le=10),
+    delimiter: str = Query("-"),
+    min_word_length: int = Query(3, ge=2, le=10),
+    max_word_length: int = Query(8, ge=3, le=20)
+):
+    """CLI-friendly endpoint returning a clean raw password string without trailing newlines."""
+    if type == "pronounceable":
+        res = generate_pronounceable(length=length, case_style=case_style, include_number=include_number, count=1)
+        pwd = res["passwords"][0]
+    elif type == "passphrase":
+        res = generate_passphrase(
+            word_count=word_count, delimiter=delimiter, include_number=include_number,
+            random_case=(case_style == "random"), min_word_length=min_word_length,
+            max_word_length=max_word_length, count=1
+        )
+        pwd = res["passphrases"][0]
+        if case_style == "title":
+            pwd = delimiter.join(w.capitalize() for w in pwd.split(delimiter))
+        elif case_style == "upper":
+            pwd = pwd.upper()
+    elif type == "pin":
+        res = generate_pin(length=length if length <= 12 else 4, count=1)
+        pwd = res["pins"][0]
+    else:
+        res = generate_chars(
+            length=length, symbols=symbols, numbers=numbers,
+            uppercase=uppercase, include_ambiguous=include_ambiguous, count=1
+        )
+        pwd = res["passwords"][0]
+        
+    return PlainTextResponse(content=pwd.strip())
+
+# Mount static frontend build files if they exist (Docker production mode)
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
