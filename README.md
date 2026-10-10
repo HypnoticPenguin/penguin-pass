@@ -114,7 +114,7 @@ Penguin Pass includes a raw text API endpoint (`/api/generate`) designed for CLI
 
 **Default (Standard Character Password):**
 ```bash
-curl -s https://password.yourdomain.com/api/generate]
+curl -s https://password.yourdomain.com/api/generate
 ```
 
 **Pronounceable Password (Title Case with Numbers):**
